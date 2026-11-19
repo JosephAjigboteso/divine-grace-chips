@@ -1,28 +1,61 @@
 /* ---------- THEME MANAGEMENT ---------- */
 function setupThemeToggle() {
-  const toggle = document.querySelector('.theme-toggle');
-  if (!toggle) return;
+  /* There can be more than one toggle (header + mobile bottom nav). */
+  const toggles = document.querySelectorAll('.theme-toggle');
+  if (!toggles.length) return;
 
-  const icon = toggle.querySelector('i');
   const STORAGE_KEY = 'dg-theme';
 
-  const updateIcon = () => {
+  const updateIcons = () => {
     const current = document.documentElement.getAttribute('data-theme');
-    if (icon) {
-      icon.className = current === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-    }
-    toggle.setAttribute('aria-label', current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    toggles.forEach(toggle => {
+      const icon = toggle.querySelector('i');
+      if (icon) icon.className = current === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      toggle.setAttribute('aria-label', current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    });
   };
 
-  toggle.addEventListener('click', () => {
+  toggles.forEach(toggle => toggle.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    sessionStorage.setItem(STORAGE_KEY, next);
-    updateIcon();
-  });
+    try { sessionStorage.setItem(STORAGE_KEY, next); } catch (e) {}
+    updateIcons();
+  }));
 
-  updateIcon();
+  updateIcons();
+}
+
+/* ---------- MOBILE BOTTOM NAV ---------- */
+function setupBottomNav() {
+  const bar = document.querySelector('.bottom-nav');
+  if (!bar) return;
+
+  /* Slide the bar in once the visitor starts scrolling. */
+  const SHOW_AFTER = 80;
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      bar.classList.toggle('visible', window.scrollY > SHOW_AFTER);
+      ticking = false;
+    });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* Highlight the section currently on screen. */
+  const links = bar.querySelectorAll('[data-spy]');
+  const setActive = id => links.forEach(l => l.classList.toggle('active', l.dataset.spy === id));
+  links.forEach(l => l.addEventListener('click', () => setActive(l.dataset.spy)));
+
+  const sections = [...links].map(l => document.getElementById(l.dataset.spy)).filter(Boolean);
+  if (!('IntersectionObserver' in window) || !sections.length) return;
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => { if (entry.isIntersecting) setActive(entry.target.id); });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  sections.forEach(section => observer.observe(section));
 }
 
 /* ---------- NAV ACTIVE STATE ON CLICK ---------- */
@@ -766,6 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCollage();
   setupReviewsCarousel()
   setupMenu();
+  setupBottomNav();
   setupBadgeRotation();
   setupCounters();
   setupProductImageViewer();
