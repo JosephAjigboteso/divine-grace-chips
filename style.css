@@ -3120,3 +3120,21 @@ footer {
     transition: opacity var(--transition);
   }
 }
+
+/* Order page: the cart button marks the current page, so the back link isn't needed on phones */
+@media (max-width: 700px) {
+  .has-bottom-nav .site-header .back-link {
+    display: none;
+  }
+
+  .has-bottom-nav .mobile-cart.is-current {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+  }
+}
+
+/* Hide the vertical "CRISPY • FRESH • DELICIOUS" label below laptop size */
+@media (max-width: 1024px) {
+  .hero-eyebrow {
+    display: none;
+  }
+}

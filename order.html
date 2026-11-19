@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="order-page">
+<body class="order-page has-bottom-nav">
   <!-- ===== HEADER ===== -->
   <header class="site-header">
     <div class="container nav">
@@ -35,6 +35,10 @@
         </button>
         <a class="back-link" href="products.html">
           <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to products
+        </a>
+        <a class="mobile-cart is-current" href="order.html" aria-label="Order now" aria-current="page">
+          <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
+          <span>Order</span>
         </a>
       </div>
     </div>
@@ -186,6 +190,25 @@
       <span>Freshness in every pack.</span>
     </div>
   </footer>
+
+  <!-- ===== MOBILE BOTTOM NAV (appears on scroll) ===== -->
+  <nav class="bottom-nav" aria-label="Mobile navigation">
+    <a class="bottom-nav-link" href="index.html">
+      <i class="fa-solid fa-house" aria-hidden="true"></i><span>Home</span>
+    </a>
+    <a class="bottom-nav-link" href="products.html">
+      <i class="fa-solid fa-cookie-bite" aria-hidden="true"></i><span>Products</span>
+    </a>
+    <a class="bottom-nav-link" href="index.html#about">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>About</span>
+    </a>
+    <a class="bottom-nav-link" href="index.html#contact">
+      <i class="fa-solid fa-phone" aria-hidden="true"></i><span>Contact</span>
+    </a>
+    <button class="bottom-nav-link theme-toggle" type="button" aria-label="Toggle dark mode">
+      <i class="fa-solid fa-moon" aria-hidden="true"></i><span>Theme</span>
+    </button>
+  </nav>
 
   <script src="script.js"></script>
 </body>
