@@ -230,14 +230,14 @@ function setupAdditionalProducts() {
 
 /* ---------- PRODUCT DATA ---------- */
 const products = [
-  { id: 'ziploc', name: 'Ziploc', price: 1000, group: 'sachet', image: 'asset/Ziploc.png', desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
-  { id: 'refill-2000', name: 'Refill Pack', price: 2000, group: 'sachet', image: 'asset/refill-white.png', desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
-  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', image: 'asset/refill-white.png', desc: 'A generous plantain option for sharing, events and resellers.' },
-  { id: 'potato-dozen', name: 'Potato Chips — Dozen', price: 3000, group: 'sachet', image: 'asset/potato-white.png', desc: 'Crunchy potato chips for something a little different.' },
-  { id: 'small-jar', name: 'Small Jar', price: 3500, group: 'jar', image: 'asset/small-jar-white.png', desc: 'A handy jar filled with crispy plantain goodness.' },
-  { id: 'refill-4000', name: 'Refill Pack', price: 4000, group: 'jar', image: 'asset/refill-2white.png', desc: 'A larger refill for your jar or for sharing.' },
-  { id: 'big-jar', name: 'Big Jar', price: 5500, group: 'jar', image: 'asset/Big-Jarwhite.png', desc: 'A generous jar for homes, offices, parties and serious snackers.' },
-  { id: 'refill-6000', name: 'Refill Pack', price: 6000, group: 'jar', image: 'asset/Big-refill-white.png', desc: 'A large refill option for bigger orders and regular customers.' }
+  { id: 'ziploc', name: 'Ziploc', price: 1000, group: 'sachet', image: 'asset/clear/Ziploc.png', desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
+  { id: 'refill-2000', name: 'Refill Pack', price: 2000, group: 'sachet', image: 'asset/clear/refill.png', desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
+  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', image: 'asset/clear/refill.png', desc: 'A generous plantain option for sharing, events and resellers.' },
+  { id: 'potato-dozen', name: 'Potato Chips — Dozen', price: 3000, group: 'sachet', image: 'asset/clear/potato.png', desc: 'Crunchy potato chips for something a little different.' },
+  { id: 'small-jar', name: 'Small Jar', price: 3500, group: 'jar', image: 'asset/clear/small-jar.png', desc: 'A handy jar filled with crispy plantain goodness.' },
+  { id: 'refill-4000', name: 'Refill Pack', price: 4000, group: 'jar', image: 'asset/clear/refill-2.png', desc: 'A larger refill for your jar or for sharing.' },
+  { id: 'big-jar', name: 'Big Jar', price: 5500, group: 'jar', image: 'asset/clear/Big-Jar.png', desc: 'A generous jar for homes, offices, parties and serious snackers.' },
+  { id: 'refill-6000', name: 'Refill Pack', price: 6000, group: 'jar', image: 'asset/clear/Big-refill.png', desc: 'A large refill option for bigger orders and regular customers.' }
 ];
 
 const money = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
