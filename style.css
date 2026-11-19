@@ -3144,3 +3144,80 @@ footer {
     display: none;
   }
 }
+
+/* ---------- BRAND COLLAGE: scroll-driven spread ----------
+   The section is one screen tall plus extra scroll distance (--collage-travel).
+   The inner box sticks under the header while that distance is scrolled,
+   and the script turns that scroll into the spread animation. */
+.collage-section {
+  --header-h: 78px;          /* updated by script.js to the real header height */
+  --collage-travel: 110vh;   /* how much scrolling the spread takes */
+  --bottom-inset: 0px;       /* space kept clear at the bottom (mobile nav bar) */
+  min-height: 0;
+  height: calc(100vh + var(--collage-travel));
+  height: calc(100svh + var(--collage-travel));
+}
+
+.collage-section .collage-sticky {
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+  height: calc(100svh - var(--header-h));
+  min-height: 0;
+  align-items: start;
+}
+
+.collage-section .collage-stage {
+  height: calc(100% - var(--bottom-inset));
+}
+
+.collage-section .collage-title {
+  top: calc(50% - var(--bottom-inset) / 2);
+}
+
+.collage-section .collage-item {
+  transform-origin: center;
+  backface-visibility: hidden;
+}
+
+@media (max-width: 700px) {
+  .collage-section {
+    --collage-travel: 90vh;
+    --bottom-inset: 92px;    /* keep the cards above the floating bottom nav */
+  }
+}
+
+/* Reduced motion: no pinning, cards simply shown in their final layout */
+.collage-section.collage-static {
+  height: auto;
+}
+
+.collage-section.collage-static .collage-sticky {
+  position: relative;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+}
+
+/* Very narrow phones (e.g. iPhone SE): cart icon only, so the logo isn't covered */
+@media (max-width: 359px) {
+  .has-bottom-nav .mobile-cart {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .has-bottom-nav .mobile-cart span {
+    display: none;
+  }
+}
+
+/* Keep each collage photo fully inside its card (tall jars were being cut off) */
+.collage-section .collage-item {
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+
+.collage-section .collage-item img {
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+}

@@ -450,95 +450,168 @@ function setupCollage() {
   const section = document.querySelector('[data-collage]');
   const stage = document.querySelector('[data-collage-stage]');
   const title = document.querySelector('[data-collage-title]');
+  const header = document.querySelector('.site-header');
   if (!section || !stage) return;
 
   const items = Array.from(stage.querySelectorAll('.collage-item'));
   if (!items.length) return;
 
   /*
-   * The old version intercepted wheel/touch events and temporarily locked
-   * the document. That caused the vibration/stuck feeling, especially on
-   * trackpads and mobile browsers.
-   *
-   * This version uses the browser's normal scroll position as the animation
-   * driver. The section remains sticky visually, but scrolling is never
-   * blocked.
+   * Scroll-driven fan-out.
+   * The section is taller than the screen and its inner box is position:sticky,
+   * so the browser itself pins it while you scroll through. Scroll position
+   * inside that pinned stretch becomes the animation progress (0 → 1).
+   * Nothing intercepts wheel/touch events, so scrolling never feels blocked.
    */
-  let scatterOffsets = {};
+  const SPREAD_END = 0.82;   // cards reach their final spot at 82% of the pinned scroll; the rest is a short rest
+  const TITLE_AT = 0.7;      // title fades in once the cards have moved clear of it
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  /* Final tilt for each card, for a relaxed, hand-placed look */
+  const tilt = { top: -3, topright: 5, bottomright: -4, bottom: 3, bottomleft: 5, topleft: -5 };
 
-  const recalcSpread = () => {
-    const rect = stage.getBoundingClientRect();
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const smooth = t => t * t * (3 - 2 * t);   // smoothstep easing
+
+  let targets = {};
+  let target = 0;     // progress from the scroll position
+  let current = 0;    // progress currently drawn (eases toward target)
+  let rafId = null;
+
+  let fit = 1;   // card scale in the final layout (below 1 only when space is tight)
+
+  /* Work out where each card ends up, using the real space available */
+  const layout = () => {
+    const headerH = header ? header.offsetHeight : 0;
+    section.style.setProperty('--header-h', headerH + 'px');
+
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
     const isMobile = window.matchMedia('(max-width: 700px)').matches;
+    const margin = isMobile ? 14 : 56;   // breathing room from the section edges
+    const gap = isMobile ? 10 : 18;      // minimum space between cards and the title
 
-    /*
-     * Keep the cards comfortably inside the viewport. Mobile uses a tighter
-     * fan so all six products remain visible without colliding with the title.
-     */
-    const xReach = isMobile
-      ? Math.min(rect.width * 0.36, 150)
-      : Math.min(rect.width * 0.37, 360);
-
-    const yReach = isMobile
-      ? Math.min(rect.height * 0.27, 145)
-      : Math.min(rect.height * 0.34, 250);
-
-    const diagonalX = xReach * 0.92;
-    const diagonalY = yReach * 0.86;
-
-    scatterOffsets = {
-      top:        { x: 0,              y: -yReach },
-      topright:   { x: diagonalX,      y: -diagonalY },
-      bottomright:{ x: diagonalX,      y: diagonalY },
-      bottom:     { x: 0,              y: yReach },
-      bottomleft: { x: -diagonalX,     y: diagonalY },
-      topleft:    { x: -diagonalX,     y: -diagonalY }
-    };
-  };
-
-  const applyProgress = (progress) => {
-    const eased = progress < 0.5
-      ? 2 * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
+    // size of the actual title text (not its whole box)
+    let tw = 0, th = 0;
     if (title) {
-      title.classList.toggle('is-visible', progress >= 0.42);
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      const r = range.getBoundingClientRect();
+      tw = r.width; th = r.height;
     }
 
-    items.forEach((el) => {
-      const dest = scatterOffsets[el.dataset.pos] || { x: 0, y: 0 };
-      const tx = dest.x * eased;
-      const ty = dest.y * eased;
-      el.style.transform = `translate3d(calc(-50% + ${tx}px), calc(-50% + ${ty}px), 0)`;
+    const place = k => {
+      const res = {};
+      let ok = true;
+      items.forEach(el => {
+        const pos = el.dataset.pos;
+        const iw = el.offsetWidth * k;
+        const ih = el.offsetHeight * k;
+        // furthest the card's centre may travel and still stay fully inside the stage
+        const maxX = Math.max(0, w / 2 - iw / 2 - margin);
+        const maxY = Math.max(0, h / 2 - ih / 2 - margin);
+        const side = isMobile ? 0.6 : 0.5;   // how high/low the side cards sit
+        // side cards: never closer than one card height (+ a gap) to their partner
+        const sideY = Math.min(maxY, Math.max(maxY * side, ih / 2 + gap));
+
+        const map = {
+          top:         { x: 0,     y: -maxY },
+          bottom:      { x: 0,     y:  maxY },
+          topleft:     { x: -maxX, y: -sideY },
+          topright:    { x:  maxX, y: -sideY },
+          bottomleft:  { x: -maxX, y:  sideY },
+          bottomright: { x:  maxX, y:  sideY }
+        };
+        const d = map[pos] || { x: 0, y: 0 };
+        res[pos] = d;
+
+        // keep every card clear of the title: beside it, or above/below it
+        const clearX = Math.abs(d.x) - iw / 2 >= tw / 2 + gap;
+        const clearY = Math.abs(d.y) - ih / 2 >= th / 2 + gap;
+        if (!clearX && !clearY) ok = false;
+        if (sideY < ih / 2 + gap / 2) ok = false;   // side pair would touch
+      });
+      return { res, ok };
+    };
+
+    // shrink the cards a little (never below 70%) only if they can't fit at full size
+    fit = 1;
+    let result = place(1);
+    while (!result.ok && fit > 0.7) {
+      fit = Math.round((fit - 0.05) * 100) / 100;
+      result = place(fit);
+    }
+    targets = result.res;
+  };
+
+  const draw = progress => {
+    const t = smooth(clamp(progress / SPREAD_END, 0, 1));
+    if (title) title.classList.toggle('is-visible', progress >= TITLE_AT);
+
+    items.forEach(el => {
+      const pos = el.dataset.pos;
+      const d = targets[pos] || { x: 0, y: 0 };
+      const rot = (tilt[pos] || 0) * t;
+      const scale = fit * (0.84 + 0.16 * t);
+      el.style.transform =
+        `translate3d(calc(-50% + ${(d.x * t).toFixed(1)}px), calc(-50% + ${(d.y * t).toFixed(1)}px), 0) ` +
+        `rotate(${rot.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
     });
   };
 
-  let ticking = false;
+  const readScroll = () => {
+    const rect = section.getBoundingClientRect();
+    const headerH = header ? header.offsetHeight : 0;
+    const sticky = section.querySelector('.collage-sticky');
+    const travel = Math.max(1, section.offsetHeight - (sticky ? sticky.offsetHeight : window.innerHeight));
+    target = clamp((headerH - rect.top) / travel, 0, 1);
+  };
 
-  const updateFromScroll = () => {
-    if (ticking) return;
-    ticking = true;
+  /* Ease the drawn progress toward the scroll progress, so motion feels smooth */
+  const tick = () => {
+    const diff = target - current;
+    if (Math.abs(diff) < 0.0008) {
+      current = target;
+      draw(current);
+      rafId = null;
+      return;
+    }
+    current += diff * 0.2;
+    draw(current);
+    rafId = requestAnimationFrame(tick);
+  };
 
-    requestAnimationFrame(() => {
-      ticking = false;
-
-      const rect = section.getBoundingClientRect();
-      const travel = Math.max(1, section.offsetHeight - window.innerHeight);
-      const progress = clamp(-rect.top / travel, 0, 1);
-
-      applyProgress(progress);
-    });
+  const onScroll = () => {
+    if (reduceMotion.matches) return;
+    readScroll();
+    if (!rafId) rafId = requestAnimationFrame(tick);
   };
 
   const refresh = () => {
-    recalcSpread();
-    updateFromScroll();
+    layout();
+    if (reduceMotion.matches) {
+      section.classList.add('collage-static');
+      current = target = 1;
+      draw(1);
+      return;
+    }
+    section.classList.remove('collage-static');
+    readScroll();
+    current = target;   // no catch-up animation after a resize / first load
+    draw(current);
+  };
+
+  let resizeTimer;
+  const onResize = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(refresh, 120);
   };
 
   requestAnimationFrame(refresh);
-  window.addEventListener('scroll', updateFromScroll, { passive: true });
-  window.addEventListener('resize', refresh);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onResize);
+  window.addEventListener('load', refresh);
+  if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', refresh);
 }
 /* ---------- COUNTERS ---------- */
 function setupCounters() {
