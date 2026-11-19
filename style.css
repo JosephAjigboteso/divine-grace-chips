@@ -1296,8 +1296,11 @@ body {
 }
 
 .image-viewer-trigger {
+  position: absolute;   /* fill the fixed-height image area exactly */
+  inset: 0;
   width: 100%;
   height: 100%;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);  /* keep the image inside the box */
   padding: 14px;
   display: grid;
   place-items: center;
@@ -3021,11 +3024,12 @@ footer {
     height: 42px;
     padding: 0 16px;
     border-radius: 12px;
-    background: var(--primary);
-    color: #201b13;
+    /* Same colours as the laptop "Order Now" button (.nav-cta) */
+    background: var(--text);
+    color: var(--background);
     font-size: 13px;
     font-weight: 700;
-    box-shadow: 0 8px 20px color-mix(in srgb, var(--primary-dark) 28%, transparent);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--text) 18%, transparent);
     transition: transform var(--transition), box-shadow var(--transition);
   }
 
@@ -3130,7 +3134,7 @@ footer {
   }
 
   .has-bottom-nav .mobile-cart.is-current {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 22%, transparent);
   }
 }
 
