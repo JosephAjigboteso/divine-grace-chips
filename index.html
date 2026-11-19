@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Divine Grace Chips — fresh, crunchy plantain and potato chips, made with care.">
+  <title>Divine Grace Chips | Fresh Crunch, Every Time</title>
+  <script>
+  (function () {
+    try {
+      var saved = sessionStorage.getItem('dg-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  })();
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home-page">
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="container nav">
+     <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+      <img src="asset/logo.png" alt="Divine Grace Chips" class="logo-image">
+      <span class="logo-text">Divine Grace <strong>Chips</strong></span>
+    </a>
+
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a class="active" href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+          <i class="fa-solid fa-moon" aria-hidden="true"></i>
+        </button>
+        <a class="nav-cta" href="order.html">Order Now <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
+          <i class="fa-solid fa-bars-staggered" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+  
+<!-- ===== HERO ===== -->
+<section class="hero" id="home">
+  <div class="container hero-grid">
+
+    <span class="eyebrow hero-eyebrow">
+      <i class="fa-solid fa-bolt" aria-hidden="true"></i> CRISPY • FRESH • DELICIOUS
+    </span>
+
+    <div class="hero-copy reveal">
+      <h1>A little crunch of <em>joy</em> in every bite.</h1>
+      <p>Freshly prepared Divine Grace plantain and potato chips, carefully packed for everyday cravings, gatherings and special moments.</p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="products.html">Explore Our Chips <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+        <a class="btn btn-light" href="#about"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Our Story</a>
+      </div>
+
+      <div class="trust-row">
+        <div>
+          <strong>100%</strong>
+          <span>Freshly prepared</span>
+        </div>
+        <div>
+          <strong data-counter="8" data-duration="3000" data-counter-on-scroll>1</strong>
+          <span>Product options</span>
+        </div>
+        <div>
+          <strong data-counter="1000" data-prefix="₦" data-duration="10000" data-counter-on-scroll>₦1</strong>
+          <span>Starting price</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual reveal">
+      <img src="asset/Crispy Plantain Chip Splash.png" alt="Divine Grace plantain chips spilling from a pack" class="hero-photo">
+      <div class="floating-badge" aria-live="polite">
+        <span class="badge-icon"><i class="fa-solid fa-leaf" aria-hidden="true"></i></span>
+        <strong class="badge-title">Always Fresh</strong>
+        <small>Made with care</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BRAND COLLAGE (scroll-locked fan-out) ===== -->
+<section class="collage-section" data-collage>
+  <div class="collage-sentinel" data-collage-sentinel aria-hidden="true"></div>
+  <div class="collage-sticky">
+    <div class="collage-title" data-collage-title>
+      <span class="eyebrow">A LOOK AT THE BRAND</span>
+      <h2>Made to be seen.<br>Made to be enjoyed.</h2>
+    </div>
+
+    <div class="collage-stage" data-collage-stage>
+      <figure class="collage-item" data-pos="top">
+        <img src="asset/potato-white.png" alt="Divine Grace plantain chips pack">
+      </figure>
+
+      <figure class="collage-item" data-pos="topright">
+        <img src="asset/small-jar-white.png" alt="Divine Grace jars">
+      </figure>
+
+      <figure class="collage-item" data-pos="bottomright">
+        <img src="asset/refill-2white.png" alt="Divine Grace potato chips pack">
+      </figure>
+
+      <figure class="collage-item" data-pos="bottom">
+        <img src="asset/refill-white.png" alt="Divine Grace plantain refill packs">
+      </figure>
+
+      <figure class="collage-item" data-pos="bottomleft">
+        <img src="asset/Big-Jarwhite.png" alt="Divine Grace refill pack">
+      </figure>
+
+      <figure class="collage-item" data-pos="topleft">
+        <img src="asset/Big-refill-white.png" alt="Divine Grace big refill">
+      </figure>
+    </div>
+
+  <div class="collage-decoration" aria-hidden="true">
+  <i class="fa-solid fa-star decor-star star-one"></i>
+  <i class="fa-solid fa-star decor-star star-two"></i>
+  <i class="fa-solid fa-star decor-star star-three"></i>
+  <i class="fa-solid fa-star decor-star star-four"></i>
+  <i class="fa-solid fa-star decor-star star-five"></i>
+  <i class="fa-solid fa-star decor-star star-six"></i>
+  <i class="fa-solid fa-star decor-star star-seven"></i>
+  <i class="fa-solid fa-star decor-star star-eight"></i>
+  <span class="decor-line line-top"></span>
+  <span class="decor-line line-bottom"></span>
+</div>
+  </div>
+</section>
+    <!-- ===== WHY CHOOSE US ===== -->
+    <section class="why-section">
+      <div class="container">
+        <div class="section-heading">
+          <span class="eyebrow">WHY CHOOSE US</span>
+          <h2>Good snacks start with good care.</h2>
+          <p>Everything on the original Divine Grace site, brought together in a cleaner shopping experience.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="feature-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></span>
+            <h3>Always Fresh</h3>
+            <p>Freshly prepared on demand — no stale chips, just the crunch you expect.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+            <h3>Quality You Can Trust</h3>
+            <p>Carefully selected ingredients and attention to preparation in every batch.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon"><i class="fa-solid fa-heart" aria-hidden="true"></i></span>
+            <h3>Customers' Favourite</h3>
+            <p>Loved for taste, freshness and consistency across our different packs.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon"><i class="fa-solid fa-leaf" aria-hidden="true"></i></span>
+            <h3>Natural Ingredients</h3>
+            <p>Plantains, potatoes and carefully chosen ingredients — made without unnecessary additives.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ABOUT ===== -->
+    <section class="about-section" id="about">
+      <div class="container about-grid">
+        <div class="about-photo delivery-animation" aria-label="Animated illustration of Divine Grace Chips being delivered from one shop to another">
+          <div class="delivery-scene">
+            <div class="scene-sky-glow"></div>
+
+            <div class="delivery-shop shop-one">
+              <div class="shop-sign"><span>DIVINE</span><strong>GRACE</strong></div>
+              <div class="shop-awning"></div>
+              <div class="shop-front">
+                <div class="shop-window"><span class="window-bag">DG</span></div>
+                <div class="shop-door"></div>
+              </div>
+            </div>
+
+            <div class="delivery-road">
+              <span></span><span></span><span></span><span></span>
+            </div>
+
+            <div class="delivery-person" aria-hidden="true">
+              <div class="person-shadow"></div>
+              <div class="person-head"><span class="person-hair"></span></div>
+              <div class="person-neck"></div>
+              <div class="person-body">
+                <span class="delivery-logo">DG</span>
+              </div>
+              <div class="person-arm arm-back"></div>
+              <div class="person-arm arm-front"><span class="chip-package">DIVINE<br><b>GRACE</b></span></div>
+              <div class="person-leg leg-left"></div>
+              <div class="person-leg leg-right"></div>
+              <div class="person-shoe shoe-left"></div>
+              <div class="person-shoe shoe-right"></div>
+            </div>
+
+            <div class="delivery-spark spark-one">✦</div>
+            <div class="delivery-spark spark-two">✦</div>
+            <div class="delivery-spark spark-three">•</div>
+
+            <div class="delivery-shop shop-two">
+              <div class="shop-sign"><span>FRESH</span><strong>SNACKS</strong></div>
+              <div class="shop-awning"></div>
+              <div class="shop-front">
+                <div class="shop-window"><span class="window-bag">DG</span></div>
+                <div class="shop-door"></div>
+              </div>
+            </div>
+
+            <div class="delivery-caption">
+              <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+              <span>Fresh chips on the way</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-copy">
+          <span class="eyebrow">ABOUT US</span>
+          <h2>Simple beginnings. Serious crunch.</h2>
+          <p>Divine Grace Chips is a locally made snack brand focused on producing fresh, crunchy and hygienically prepared plantain and potato chips.</p>
+          <p>We started with a simple goal — to make cleaner, better-tasting chips you can confidently enjoy and share with family and friends. Our chips are made in small batches so every pack stays tasty and crispy.</p>
+
+          <div class="audience-tags">
+            <span><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Students</span>
+            <span><i class="fa-solid fa-house" aria-hidden="true"></i> Homes</span>
+            <span><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Offices</span>
+            <span><i class="fa-solid fa-cake-candles" aria-hidden="true"></i> Parties</span>
+            <span><i class="fa-solid fa-store" aria-hidden="true"></i> Resellers</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <!-- ===== CUSTOMER REVIEWS ===== -->
+<section class="reviews-section" id="reviews">
+  <div class="container">
+    <div class="section-heading">
+      <span class="eyebrow">WHAT CUSTOMERS SAY</span>
+      <h2>Real reviews. Real crunch.</h2>
+      <p>Hear from people who have enjoyed Divine Grace Chips.</p>
+    </div>
+
+    <div class="reviews-carousel" data-reviews-carousel>
+      <button class="reviews-nav reviews-prev" type="button" aria-label="Previous review">
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
+
+      <div class="reviews-viewport">
+        <div class="reviews-track" data-reviews-track></div>
+      </div>
+
+      <button class="reviews-nav reviews-next" type="button" aria-label="Next review">
+        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </button>
+
+      <div class="reviews-dots" data-reviews-dots></div>
+    </div>
+  </div>
+</section>
+
+    <!-- ===== CTA ===== -->
+    <section class="cta-section" id="contact">
+      <div class="container cta-card">
+        <div>
+          <span class="eyebrow">READY FOR A CRUNCH?</span>
+          <h2>Fresh chips are just an order away.</h2>
+          <p>Choose your favourite pack and send us your details. We will contact you to confirm the order.</p>
+        </div>
+        <a class="btn btn-primary" href="order.html">Place an Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="container footer-grid">
+      <div>
+        <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+          <img src="asset/logo.png" alt="Divine Grace Chips" class="logo-image">
+          <span class="logo-text">Divine Grace <strong>Chips</strong></span>
+        </a>
+        <p>Made with care. Seasoned to perfection. Always fresh.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="order.html">Place Order</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a class="contact-link" href="tel:08157255322">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span>08157255322</span>
+        </a>
+        <a class="contact-link" href="tel:08060428328">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span>08060428328</span>
+        </a>
+        <a class="contact-link" href="https://wa.me/2348157255322" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+          <span>WhatsApp us</span>
+        </a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span id="year"></span> Divine Grace Chips</span>
+      <span>Freshness in every pack.</span>
+    </div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>

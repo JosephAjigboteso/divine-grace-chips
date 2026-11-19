@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Shop Divine Grace Chips products and packs.">
+  <title>Divine Grace Chips | Products</title>
+  <script>
+  (function () {
+    try {
+      var saved = sessionStorage.getItem('dg-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  })();
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="container nav">
+      <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+          <img src="asset/logo.png" alt="Divine Grace Chips" class="logo-image">
+          <span class="logo-text">Divine Grace <strong>Chips</strong></span>
+        </a>
+
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a class="active"href="products.html">Products</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+          <i class="fa-solid fa-moon" aria-hidden="true"></i>
+        </button>
+        <a class="nav-cta" href="order.html">Order Now <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
+          <i class="fa-solid fa-bars-staggered" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== PAGE HERO ===== -->
+    <section class="page-hero">
+      <div class="container">
+        <span class="eyebrow">OUR PRODUCTS</span>
+        <h1>Pick your perfect pack.</h1>
+        <p>From convenient sachets to generous jars and refills, there is a Divine Grace option for every craving.</p>
+      </div>
+    </section>
+
+    <!-- ===== PRODUCTS ===== -->
+    <section class="products-section product-page">
+      <div class="container">
+        <div class="category-block">
+          <div class="category-heading">
+            <div>
+              <span class="eyebrow"><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i> SACHETS &amp; EVERYDAY SNACKS</span>
+              <h2>Easy to carry. Easy to love.</h2>
+            </div>
+          </div>
+          <div class="product-grid four" id="sachetGrid"></div>
+        </div>
+
+        <div class="category-block">
+          <div class="category-heading">
+            <div>
+              <span class="eyebrow"><i class="fa-solid fa-jar" aria-hidden="true"></i> JARS &amp; REFILLS</span>
+              <h2>More crunch for sharing.</h2>
+            </div>
+          </div>
+          <div class="product-grid four" id="jarGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ORDER BANNER ===== -->
+    <section class="order-banner">
+      <div class="container">
+        <div>
+          <span class="eyebrow">NEED HELP CHOOSING?</span>
+          <h2>Tell us what you need.</h2>
+          <p>Place an order and we will confirm the pack and quantity with you.</p>
+        </div>
+        <a class="btn btn-primary" href="order.html">Start My Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="container footer-grid">
+      <div>
+       <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+          <img src="asset/logo.png" alt="Divine Grace Chips" class="logo-image">
+          <span class="logo-text">Divine Grace <strong>Chips</strong></span>
+        </a>
+        <p>Made with care. Seasoned to perfection. Always fresh.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="order.html">Place Order</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a class="contact-link" href="tel:08157255322">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span>08157255322</span>
+        </a>
+        <a class="contact-link" href="tel:08060428328">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span>08060428328</span>
+        </a>
+        <a class="contact-link" href="https://wa.me/2348157255322" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+          <span>WhatsApp us</span>
+        </a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span id="year"></span> Divine Grace Chips</span>
+      <span>Freshness in every pack.</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

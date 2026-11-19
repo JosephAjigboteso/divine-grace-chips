@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Place an order with Divine Grace Chips.">
+  <title>Divine Grace Chips | Place Order</title>
+  <script>
+  (function () {
+    try {
+      var saved = sessionStorage.getItem('dg-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  })();
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="order-page">
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="container nav">
+      <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+          <img src="asset/logo.png" alt="Divine Grace Chips" class="logo-image">
+          <span class="logo-text">Divine Grace <strong>Chips</strong></span>
+        </a>
+      <div class="nav-actions">
+        <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+          <i class="fa-solid fa-moon" aria-hidden="true"></i>
+        </button>
+        <a class="back-link" href="products.html">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to products
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="order-main">
+    <div class="container order-grid">
+      <!-- ===== ORDER SUMMARY ===== -->
+      <aside class="order-summary">
+        <span class="eyebrow">YOUR ORDER</span>
+        <h1>Almost there!</h1>
+        <p>Choose a product, set your quantity and tell us where to reach you.</p>
+
+        <div class="primary-product-item">
+          <div class="selected-product">
+            <img id="miniArt" src="" alt="Selected product">
+            <div>
+              <strong id="selectedName">Click a product to order</strong>
+              <span id="selectedPrice"></span>
+            </div>
+          </div>
+          <div class="quantity-box">
+            <span>Quantity</span>
+            <div class="quantity-control">
+              <button type="button" id="minus" aria-label="Decrease quantity">−</button>
+              <strong id="qty">1</strong>
+              <button type="button" id="plus" aria-label="Increase quantity">+</button>
+            </div>
+          </div>
+          <div class="product-type">
+            <label for="productType">Type</label>
+            <select id="productType">
+              <option value="Ripe">Ripe</option>
+              <option value="Unripe">Unripe</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="added-products" id="addedProducts" aria-live="polite"></div>
+
+        <div class="add-product-picker" id="addProductPicker" hidden>
+          <select id="additionalProduct" aria-hidden="true" tabindex="-1"></select>
+          <div class="product-options" id="productOptions"></div>
+        </div>
+
+        <div class="total-row">
+          <span>Total</span>
+          <strong id="total">₦0</strong>
+        </div>
+
+        <button class="btn btn-light add-product-btn" id="addProductBtn" type="button">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> Add more products
+        </button>
+      </aside>
+
+      <!-- ===== ORDER FORM ===== -->
+      <section class="form-card">
+        <div class="section-heading left">
+          <span class="eyebrow">ORDER DETAILS</span>
+          <h2>Place your order</h2>
+          <p>Fill in your details and we will contact you to confirm the order.</p>
+        </div>
+
+        <form id="orderForm">
+          <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
+          <input type="hidden" name="subject" value="New Divine Grace Chips Order">
+          <input type="hidden" name="from_name" value="Divine Grace Chips Website">
+          <input type="checkbox" name="botcheck" style="display:none">
+
+          <input type="hidden" name="product" id="productField">
+          <input type="hidden" name="quantity" id="quantityField">
+          <input type="hidden" name="type" id="typeField">
+          <input type="hidden" name="total" id="totalField">
+
+          <div class="field">
+            <label for="productSelect">Product <span>*</span></label>
+            <select id="productSelect" name="product_choice"></select>
+          </div>
+
+          <div class="field">
+            <label for="name">Full Name <span>*</span></label>
+            <input id="name" name="name" type="text" placeholder="Enter your full name" autocomplete="name" required>
+          </div>
+
+          <div class="field">
+            <label for="phone">Phone Number <span>*</span></label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="e.g. 08012345678" autocomplete="tel" required>
+          </div>
+
+          <div class="field">
+            <label for="email">Email Address <small>(optional)</small></label>
+            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+
+          <div class="field">
+            <label for="address">Delivery Address <span>*</span></label>
+            <textarea id="address" name="address" rows="3" placeholder="Enter your delivery / pick-up address" required></textarea>
+          </div>
+
+          <div class="field">
+            <label for="notes">Additional Note <small>(optional)</small></label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Anything else we should know?"></textarea>
+          </div>
+
+          <button class="btn btn-primary submit-btn" type="submit" id="submitBtn">
+            Submit Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </button>
+
+          <div class="form-message" id="formMessage" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="container footer-grid">
+      <div>
+        <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+          <img src="asset/logo.png" alt="Divine Grace Chips" class="logo-image">
+          <span class="logo-text">Divine Grace <strong>Chips</strong></span>
+        </a>
+        <p>Made with care. Seasoned to perfection. Always fresh.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="order.html">Place Order</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a class="contact-link" href="tel:08157255322">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span>08157255322</span>
+        </a>
+        <a class="contact-link" href="tel:08060428328">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <span>08060428328</span>
+        </a>
+        <a class="contact-link" href="https://wa.me/2348157255322" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+          <span>WhatsApp us</span>
+        </a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span id="year"></span> Divine Grace Chips</span>
+      <span>Freshness in every pack.</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
