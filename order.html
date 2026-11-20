@@ -158,8 +158,12 @@
             <textarea id="review" name="review" rows="3" placeholder="Tried our chips before? Tell us what you think."></textarea>
           </div>
 
+          <!-- payment details sent with the order -->
+          <input type="hidden" name="payment_method" id="paymentMethodField">
+          <input type="hidden" name="payment_reference" id="paymentRefField">
+
           <button class="btn btn-primary submit-btn" type="submit" id="submitBtn">
-            Submit Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            Proceed to Payment <i class="fa-solid fa-lock" aria-hidden="true"></i>
           </button>
 
           <div class="form-message" id="formMessage" role="status" aria-live="polite"></div>
@@ -205,6 +209,59 @@
       <span>Freshness in every pack.</span>
     </div>
   </footer>
+
+  <!-- ===== PAYMENT (opens after "Proceed to Payment") ===== -->
+  <div class="pay-overlay" id="payment" hidden>
+    <div class="pay" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+      <button class="pay-close" type="button" id="payClose" aria-label="Close payment and go back to the order"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+
+      <!-- step 1: transfer details -->
+      <div class="pay-step" id="payStep">
+        <span class="pay-badge"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Bank transfer</span>
+        <h2 id="payTitle">Complete your payment</h2>
+        <p class="pay-intro">Transfer the exact amount below, then tap <strong>I have made payment</strong> to send your order.</p>
+
+        <div class="pay-amount">
+          <span>Amount to pay</span>
+          <strong id="payAmount">₦0</strong>
+          <button type="button" class="pay-copy" data-copy-from="payAmountRaw"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button>
+          <span id="payAmountRaw" hidden></span>
+        </div>
+
+        <dl class="pay-details">
+          <div><dt>Bank</dt><dd id="payBank"></dd></div>
+          <div><dt>Account name</dt><dd id="payAccName"></dd></div>
+          <div>
+            <dt>Account number</dt>
+            <dd><span class="pay-accno" id="payAccNo"></span>
+              <button type="button" class="pay-copy" data-copy-from="payAccNo"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button></dd>
+          </div>
+          <div>
+            <dt>Reference</dt>
+            <dd><span class="pay-ref" id="payRef"></span>
+              <button type="button" class="pay-copy" data-copy-from="payRef"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button></dd>
+          </div>
+        </dl>
+        <p class="pay-tip"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Use the reference as your transfer description (narration) so we can match your payment quickly.</p>
+
+        <button class="btn btn-primary pay-confirm" type="button" id="payConfirm">
+          <i class="fa-solid fa-circle-check" aria-hidden="true"></i> I have made payment
+        </button>
+        <button class="pay-back" type="button" id="payBack"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Go back and edit my order</button>
+        <div class="form-message" id="payMessage" role="status" aria-live="polite"></div>
+      </div>
+
+      <!-- step 2: done -->
+      <div class="pay-step pay-done" id="payDone" hidden>
+        <span class="pay-done-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+        <h2>Order received!</h2>
+        <p id="payDoneText">Thank you. We will confirm your payment and contact you shortly to arrange delivery.</p>
+        <div class="pay-done-ref">Order reference <strong id="payDoneRef"></strong></div>
+        <a class="btn btn-primary" href="products.html">Continue shopping</a>
+        <button class="pay-back" type="button" id="payFinish">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== MOBILE BOTTOM NAV (appears on scroll) ===== -->
   <nav class="bottom-nav" aria-label="Mobile navigation">

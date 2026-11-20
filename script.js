@@ -158,6 +158,14 @@ function setupNavActiveOnClick() {
   });
 }
 
+/* ---------- PAYMENT ACCOUNT (order page) ----------
+   ⚠ PLACEHOLDER DETAILS — replace with your real bank account before going live. */
+const PAYMENT_ACCOUNT = {
+  bank: 'Moniepoint MFB',
+  accountName: 'Divine Grace Chips',
+  accountNumber: '0123456789'
+};
+
 /* ---------- PRODUCT DATA ----------
    PHOTOS — each product has its own folder:  asset/products/<id>/
      • photos: file names inside that folder, in slider order.
@@ -444,12 +452,69 @@ function setupOrderPage() {
   const clearMessage = () => { message.className = 'form-message'; message.textContent = ''; };
   const showError = text => { message.className = 'form-message error'; message.textContent = text; };
 
-  form.addEventListener('submit', async e => {
+  /* ---- payment (bank transfer) ---- */
+  const pay = {
+    overlay: $('payment'), step: $('payStep'), done: $('payDone'), confirm: $('payConfirm'),
+    message: $('payMessage'), close: $('payClose'), back: $('payBack'), finish: $('payFinish')
+  };
+  let reference = '';
+  let lastFocus = null;
+
+  const newReference = () => 'DG-' + Date.now().toString(36).slice(-5).toUpperCase() +
+    Math.floor(Math.random() * 36).toString(36).toUpperCase();
+
+  const openPayment = () => {
+    reference = reference || newReference();
+    $('payAmount').textContent = money.format(orderTotal());
+    $('payAmountRaw').textContent = String(orderTotal());
+    $('payBank').textContent = PAYMENT_ACCOUNT.bank;
+    $('payAccName').textContent = PAYMENT_ACCOUNT.accountName;
+    $('payAccNo').textContent = PAYMENT_ACCOUNT.accountNumber;
+    $('payRef').textContent = reference;
+    pay.step.hidden = false; pay.done.hidden = true;
+    pay.message.className = 'form-message'; pay.message.textContent = '';
+    lastFocus = document.activeElement;
+    pay.overlay.hidden = false;
+    requestAnimationFrame(() => pay.overlay.classList.add('is-open'));
+    document.body.classList.add('viewer-open');
+    pay.confirm.focus({ preventScroll: true });
+  };
+
+  const closePayment = () => {
+    pay.overlay.classList.remove('is-open');
+    document.body.classList.remove('viewer-open');
+    setTimeout(() => { pay.overlay.hidden = true; }, 250);
+    if (lastFocus) lastFocus.focus({ preventScroll: true });
+  };
+
+  [pay.close, pay.back, pay.finish].forEach(btn => btn.addEventListener('click', closePayment));
+  pay.overlay.addEventListener('click', e => { if (e.target === pay.overlay && !pay.confirm.disabled) closePayment(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !pay.overlay.hidden && !pay.confirm.disabled) closePayment();
+  });
+
+  // copy buttons
+  pay.overlay.addEventListener('click', async e => {
+    const btn = e.target.closest('.pay-copy');
+    if (!btn) return;
+    const text = $(btn.dataset.copyFrom).textContent.trim();
+    try { await navigator.clipboard.writeText(text); }
+    catch (err) {                                   // older browsers
+      const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t);
+      t.select(); try { document.execCommand('copy'); } catch (e2) {} t.remove();
+    }
+    const html = btn.innerHTML;
+    btn.classList.add('is-copied'); btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Copied';
+    setTimeout(() => { btn.classList.remove('is-copied'); btn.innerHTML = html; }, 1600);
+  });
+
+  /* Step 1 — "Proceed to Payment": check everything, then show the transfer details */
+  form.addEventListener('submit', e => {
     e.preventDefault();
     clearMessage();
 
     if (!cart.length) {
-      showError('Please choose at least one product at the top of the page before submitting.');
+      showError('Please choose at least one product at the top of the page before continuing.');
       summary.scrollIntoView({ behavior: 'smooth', block: 'start' });
       summary.classList.remove('needs-product'); void summary.offsetWidth; summary.classList.add('needs-product');
       return;
@@ -465,15 +530,27 @@ function setupOrderPage() {
     if (!form.reportValidity()) return;
     phone.value = normalisePhone(phone.value);   // send it in one clean format, e.g. 08012345678
 
+    openPayment();
+  });
+
+  /* Step 2 — "I have made payment": this is what actually sends the order */
+  pay.confirm.addEventListener('click', async () => {
+    pay.message.className = 'form-message'; pay.message.textContent = '';
+
     const key = form.querySelector('[name="access_key"]').value.trim();
     if (!key || key === 'YOUR_WEB3FORMS_ACCESS_KEY') {
-      showError('Add your Web3Forms access key in order.html before testing submissions.');
+      pay.message.className = 'form-message error';
+      pay.message.textContent = 'Orders can’t be sent yet: add your Web3Forms access key in order.html.';
       return;
     }
 
     fillHiddenFields();
-    submit.disabled = true;
-    submit.innerHTML = 'Sending order…';
+    $('paymentMethodField').value = `Bank transfer to ${PAYMENT_ACCOUNT.bank} ${PAYMENT_ACCOUNT.accountNumber} (customer says paid — please confirm)`;
+    $('paymentRefField').value = reference;
+
+    const idle = pay.confirm.innerHTML;
+    pay.confirm.disabled = true;
+    pay.confirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Sending your order…';
 
     try {
       const response = await fetch('https://api.web3forms.com/submit', {
@@ -483,21 +560,30 @@ function setupOrderPage() {
       });
       const result = await response.json();
       if (!(response.ok && result.success)) throw new Error(result.message || 'Unable to submit order.');
-      message.className = 'form-message success';
-      message.textContent = 'Order received successfully! We will contact you shortly to confirm.';
+
+      // success: show the confirmation, then clear the order and form
+      const where = locationSelect.value === 'Home Delivery' ? 'your home address' : locationSelect.value;
+      $('payDoneText').textContent = `Thank you, ${$('name').value.trim().split(/\s+/)[0]}! We will confirm your payment and call you on ${phone.value} to arrange delivery to ${where}.`;
+      $('payDoneRef').textContent = reference;
+      pay.step.hidden = true; pay.done.hidden = false;
+      pay.finish.focus({ preventScroll: true });
+
       form.reset();
       syncLocation();
       cart = [];
+      reference = '';
       history.replaceState(null, '', location.pathname);   // drop ?product= from the address
       render();
+      message.className = 'form-message success';
+      message.textContent = 'Order received — thank you! We will contact you shortly.';
     } catch (err) {
-      showError('We could not send the order. Please check your connection and try again.');
+      pay.message.className = 'form-message error';
+      pay.message.textContent = 'We could not send your order. Please check your connection and tap the button again.';
     } finally {
-      submit.disabled = false;
-      submit.innerHTML = 'Submit Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
+      pay.confirm.disabled = false;
+      pay.confirm.innerHTML = idle;
     }
   });
-
   render();
 }
 
