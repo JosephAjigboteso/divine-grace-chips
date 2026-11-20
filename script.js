@@ -313,21 +313,46 @@ function setupAdditionalProducts() {
 }
 
 /* ---------- PRODUCT DATA ----------
-   images: the first one is shown on the card; all of them appear in the
-           product details slider (add more photos per product here).
-   weight: shown in the product details when filled in, e.g. '150 g'. */
-const RANGE_PHOTOS = ['asset/gallery/range-studio.jpg', 'asset/gallery/range-outdoor.jpg'];
+   PHOTOS — each product has its own folder:  asset/products/<id>/
+     • photos: file names inside that folder, in slider order.
+       The FIRST photo is the main one (product card, order page, slider).
+     • To add photos: put 2.jpg, 3.jpg … in the product's folder and list
+       them here, e.g.  photos: ['1.png', '2.jpg', '3.jpg']
+     • Until a product has its own extra photos, the slider is topped up
+       with the shared stand-in photos in asset/products/_placeholder/.
+       Set  placeholders: false  on a product to turn that off.
+     See asset/products/README.md for the full guide.
+
+   weight — shown in the product details.
+   ⚠ The weights below are PLACEHOLDERS — replace them with the real ones. */
+const PRODUCT_PHOTO_DIR = 'asset/products/';
+const PLACEHOLDER_PHOTOS = ['_placeholder/range-studio.jpg', '_placeholder/range-outdoor.jpg', '_placeholder/lifestyle-picnic.jpg'];
+const MIN_SLIDER_PHOTOS = 3;   // top up with placeholders until the slider has this many
 
 const products = [
-  { id: 'ziploc', name: 'Ziploc', price: 1000, group: 'sachet', weight: '', image: 'asset/clear/Ziploc.png', images: ['asset/clear/Ziploc.png', ...RANGE_PHOTOS], desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
-  { id: 'refill-2000', name: 'Refill Pack', price: 2000, group: 'sachet', weight: '', image: 'asset/clear/refill.png', images: ['asset/clear/refill.png', ...RANGE_PHOTOS], desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
-  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', weight: '', image: 'asset/clear/refill.png', images: ['asset/clear/refill.png', ...RANGE_PHOTOS], desc: 'A generous plantain option for sharing, events and resellers.' },
-  { id: 'potato-dozen', name: 'Potato Chips — Dozen', price: 3000, group: 'sachet', weight: '', image: 'asset/clear/potato.png', images: ['asset/clear/potato.png', ...RANGE_PHOTOS], desc: 'Crunchy potato chips for something a little different.' },
-  { id: 'small-jar', name: 'Small Jar', price: 3500, group: 'jar', weight: '', image: 'asset/clear/small-jar.png', images: ['asset/clear/small-jar.png', ...RANGE_PHOTOS], desc: 'A handy jar filled with crispy plantain goodness.' },
-  { id: 'refill-4000', name: 'Refill Pack', price: 4000, group: 'jar', weight: '', image: 'asset/clear/refill-2.png', images: ['asset/clear/refill-2.png', ...RANGE_PHOTOS], desc: 'A larger refill for your jar or for sharing.' },
-  { id: 'big-jar', name: 'Big Jar', price: 5500, group: 'jar', weight: '', image: 'asset/clear/Big-Jar.png', images: ['asset/clear/Big-Jar.png', ...RANGE_PHOTOS], desc: 'A generous jar for homes, offices, parties and serious snackers.' },
-  { id: 'refill-6000', name: 'Refill Pack', price: 6000, group: 'jar', weight: '', image: 'asset/clear/Big-refill.png', images: ['asset/clear/Big-refill.png', ...RANGE_PHOTOS], desc: 'A large refill option for bigger orders and regular customers.' }
+  { id: 'ziploc',         name: 'Ziploc',                 price: 1000, group: 'sachet', weight: '100 g',      photos: ['1.png'], desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
+  { id: 'refill-2000',    name: 'Refill Pack',            price: 2000, group: 'sachet', weight: '250 g',      photos: ['1.png'], desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
+  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.png'], desc: 'A generous plantain option for sharing, events and resellers.' },
+  { id: 'potato-dozen',   name: 'Potato Chips — Dozen',   price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.png'], desc: 'Crunchy potato chips for something a little different.' },
+  { id: 'small-jar',      name: 'Small Jar',              price: 3500, group: 'jar',    weight: '400 g',      photos: ['1.png'], desc: 'A handy jar filled with crispy plantain goodness.' },
+  { id: 'refill-4000',    name: 'Refill Pack',            price: 4000, group: 'jar',    weight: '500 g',      photos: ['1.png'], desc: 'A larger refill for your jar or for sharing.' },
+  { id: 'big-jar',        name: 'Big Jar',                price: 5500, group: 'jar',    weight: '900 g',      photos: ['1.png'], desc: 'A generous jar for homes, offices, parties and serious snackers.' },
+  { id: 'refill-6000',    name: 'Refill Pack',            price: 6000, group: 'jar',    weight: '1 kg',       photos: ['1.png'], desc: 'A large refill option for bigger orders and regular customers.' }
 ];
+
+/* Build each product's photo paths from its folder (no need to edit this) */
+products.forEach((p, i) => {
+  const own = (p.photos || []).map(f => (f.includes('/') ? f : `${p.id}/${f}`));
+  const extra = [];
+  if (p.placeholders !== false) {
+    // rotate the stand-ins so neighbouring products don't all start with the same one
+    for (let k = 0; own.length + extra.length < MIN_SLIDER_PHOTOS && k < PLACEHOLDER_PHOTOS.length; k++) {
+      extra.push(PLACEHOLDER_PHOTOS[(i + k) % PLACEHOLDER_PHOTOS.length]);
+    }
+  }
+  p.images = [...own, ...extra].map(f => PRODUCT_PHOTO_DIR + f);
+  p.image = p.images[0];   // main photo
+});
 
 const money = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
 const getProduct = id => products.find(p => p.id === id) || products[0];
@@ -941,11 +966,11 @@ function setupProductImageViewer() {
     dialog.classList.toggle('is-single', single);
 
     track.innerHTML = photos.map((src, i) => `
-      <div class="pv-slide${src.includes('/clear/') ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
+      <div class="pv-slide${/\.png$/i.test(src) ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
         <img src="${src}" alt="${product.name}${i ? ` — photo ${i + 1}` : ''}" draggable="false">
       </div>`).join('');
     thumbs.innerHTML = single ? '' : photos.map((src, i) => `
-      <button type="button" class="pv-thumb${src.includes('/clear/') ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
+      <button type="button" class="pv-thumb${/\.png$/i.test(src) ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
         <img src="${src}" alt="">
       </button>`).join('');
     [...thumbs.children].forEach((t, i) => t.addEventListener('click', () => go(i)));
@@ -958,7 +983,6 @@ function setupProductImageViewer() {
 
     const specs = [];
     if (product.weight) specs.push(['Weight', product.weight]);
-    specs.push(['Pack', product.group === 'jar' ? 'Jar / refill range' : 'Sachet range']);
     if (!/potato/i.test(product.name)) {
       specs.push(['Ingredients', 'Plantain, vegetable oil, chilli pepper, salt']);   // from the pack label
       specs.push(['Plantain', 'Ripe or unripe — choose when ordering']);
