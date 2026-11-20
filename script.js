@@ -160,6 +160,9 @@ function setupNavActiveOnClick() {
 
 /* ---------- PAYMENT ACCOUNT (order page) ----------
    ⚠ PLACEHOLDER DETAILS — replace with your real bank account before going live. */
+// WhatsApp number orders are sent to (country code, no + or spaces): 0815 725 5322 → 2348157255322
+const BUSINESS_WHATSAPP = '2348157255322';
+
 const PAYMENT_ACCOUNT = {
   bank: 'Moniepoint MFB',
   accountName: 'Divine Grace Chips',
@@ -171,7 +174,7 @@ const PAYMENT_ACCOUNT = {
      • photos: file names inside that folder, in slider order.
        The FIRST photo is the main one (product card, order page, slider).
      • To add photos: put 2.jpg, 3.jpg … in the product's folder and list
-       them here, e.g.  photos: ['1.png', '2.jpg', '3.jpg']
+       them here, e.g.  photos: ['1.webp', '2.jpg', '3.jpg']
      • Until a product has its own extra photos, the slider is topped up
        with the shared stand-in photos in asset/products/_placeholder/.
        Set  placeholders: false  on a product to turn that off.
@@ -184,14 +187,14 @@ const PLACEHOLDER_PHOTOS = ['_placeholder/range-studio.jpg', '_placeholder/range
 const MIN_SLIDER_PHOTOS = 3;   // top up with placeholders until the slider has this many
 
 const products = [
-  { id: 'ziploc',         name: 'Ziploc',                 price: 1000, group: 'sachet', weight: '100 g',      photos: ['1.png'], desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
-  { id: 'refill-2000',    name: 'Refill Pack',            price: 2000, group: 'sachet', weight: '250 g',      photos: ['1.png'], desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
-  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.png'], desc: 'A generous plantain option for sharing, events and resellers.' },
-  { id: 'potato-dozen',   name: 'Potato Chips — Dozen',   price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.png'], desc: 'Crunchy potato chips for something a little different.' },
-  { id: 'small-jar',      name: 'Small Jar',              price: 3500, group: 'jar',    weight: '400 g',      photos: ['1.png'], desc: 'A handy jar filled with crispy plantain goodness.' },
-  { id: 'refill-4000',    name: 'Refill Pack',            price: 4000, group: 'jar',    weight: '500 g',      photos: ['1.png'], desc: 'A larger refill for your jar or for sharing.' },
-  { id: 'big-jar',        name: 'Big Jar',                price: 5500, group: 'jar',    weight: '900 g',      photos: ['1.png'], desc: 'A generous jar for homes, offices, parties and serious snackers.' },
-  { id: 'refill-6000',    name: 'Refill Pack',            price: 6000, group: 'jar',    weight: '1 kg',       photos: ['1.png'], desc: 'A large refill option for bigger orders and regular customers.' }
+  { id: 'ziploc',         name: 'Ziploc',                 price: 1000, group: 'sachet', weight: '100 g',      photos: ['1.webp'], desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
+  { id: 'refill-2000',    name: 'Refill Pack 2k',         price: 2000, group: 'sachet', weight: '250 g',      photos: ['1.webp'], desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
+  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.webp'], desc: 'A generous plantain option for sharing, events and resellers.' },
+  { id: 'potato-dozen',   name: 'Potato Chips — Dozen',   price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.webp'], desc: 'Crunchy potato chips for something a little different.' },
+  { id: 'small-jar',      name: 'Small Jar',              price: 3500, group: 'jar',    weight: '400 g',      photos: ['1.webp'], desc: 'A handy jar filled with crispy plantain goodness.' },
+  { id: 'refill-4000',    name: 'Refill Pack 4k',         price: 4000, group: 'jar',    weight: '500 g',      photos: ['1.webp'], desc: 'A larger refill for your jar or for sharing.' },
+  { id: 'big-jar',        name: 'Big Jar',                price: 5500, group: 'jar',    weight: '900 g',      photos: ['1.webp'], desc: 'A generous jar for homes, offices, parties and serious snackers.' },
+  { id: 'refill-6000',    name: 'Refill Pack 6k',         price: 6000, group: 'jar',    weight: '1 kg',       photos: ['1.webp'], desc: 'A large refill option for bigger orders and regular customers.' }
 ];
 
 /* Build each product's photo paths from its folder (no need to edit this) */
@@ -569,6 +572,26 @@ function setupOrderPage() {
       const result = await response.json();
       if (!(response.ok && result.success)) throw new Error(result.message || 'Unable to submit order.');
 
+      // WhatsApp message with the order, for the "Send my order on WhatsApp" button
+      const waText = [
+        'Hello Divine Grace Chips 👋, I just placed an order on your website.',
+        '',
+        `*Order ref:* ${reference}`,
+        ...cart.map(line => {
+          const p = find(line.id);
+          return `• ${line.qty} × ${p.name}${hasType(p) ? ` (${line.type})` : ''} = ${money.format(lineTotal(line))}`;
+        }),
+        `*Total:* ${money.format(orderTotal())}`,
+        '',
+        `*Name:* ${$('name').value.trim()}`,
+        `*Phone:* ${phone.value}`,
+        `*Order type:* ${(form.querySelector('[name="order_type"]:checked') || {}).value || ''}`,
+        `*${locationSelect.value === 'Home Delivery' ? 'Delivery' : 'Pickup'}:* ${locationSelect.value}${locationSelect.value === 'Home Delivery' ? ` — ${address.value.trim()}` : ''}`,
+        '',
+        `I have paid by bank transfer to ${PAYMENT_ACCOUNT.bank} (${PAYMENT_ACCOUNT.accountNumber}) using the reference above.`
+      ].join('\n');
+      $('payWhatsApp').href = `https://wa.me/${BUSINESS_WHATSAPP}?text=${encodeURIComponent(waText)}`;
+
       // success: show the confirmation, then clear the order and form
       const where = locationSelect.value === 'Home Delivery' ? 'your home address' : locationSelect.value;
       $('payDoneText').textContent = `Thank you, ${$('name').value.trim().split(/\s+/)[0]}! We will confirm your payment and call you on ${phone.value} to arrange delivery to ${where}.`;
@@ -595,46 +618,7 @@ function setupOrderPage() {
   render();
 }
 
-/* ---------- CAROUSEL (kept for compatibility — no-ops when no carousel exists) ---------- */
-function setupCarousel() {
-  const root = document.querySelector('[data-carousel]');
-  if (!root) return;
-  const track = root.querySelector('.carousel-track');
-  const slides = [...track.children];
-  const dots = root.querySelector('.dots');
-  let index = 0;
 
-  slides.forEach((_, i) => {
-    const d = document.createElement('button');
-    d.setAttribute('aria-label', `Go to image ${i + 1}`);
-    if (i === 0) d.classList.add('active');
-    d.onclick = () => go(i);
-    dots.appendChild(d);
-  });
-
-  function go(i) {
-    index = (i + slides.length) % slides.length;
-    track.style.transform = `translateX(-${index * 100}%)`;
-    dots.querySelectorAll('button').forEach((d, n) => d.classList.toggle('active', n === index));
-  }
-
-  root.querySelector('.prev').onclick = () => go(index - 1);
-  root.querySelector('.next').onclick = () => go(index + 1);
-  setInterval(() => go(index + 1), 5000);
-}
-
-/* ---------- MOBILE MENU ---------- */
-function setupMenu() {
-  const btn = document.querySelector('.menu-toggle');
-  const nav = document.querySelector('.desktop-nav');
-  if (!btn || !nav) return;
-  btn.onclick = () => {
-    const isOpen = nav.classList.toggle('open');
-    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    const icon = btn.querySelector('i');
-    if (icon) icon.className = isOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars-staggered';
-  };
-}
 
 /* ---------- BADGE ROTATION ---------- */
 function setupBadgeRotation() {
@@ -1070,11 +1054,11 @@ function setupProductImageViewer() {
     dialog.classList.toggle('is-single', single);
 
     track.innerHTML = photos.map((src, i) => `
-      <div class="pv-slide${/\.png$/i.test(src) ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
+      <div class="pv-slide${/\.(png|webp)$/i.test(src) ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
         <img src="${src}" alt="${product.name}${i ? ` — photo ${i + 1}` : ''}" draggable="false">
       </div>`).join('');
     thumbs.innerHTML = single ? '' : photos.map((src, i) => `
-      <button type="button" class="pv-thumb${/\.png$/i.test(src) ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
+      <button type="button" class="pv-thumb${/\.(png|webp)$/i.test(src) ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
         <img src="${src}" alt="">
       </button>`).join('');
     [...thumbs.children].forEach((t, i) => t.addEventListener('click', () => go(i)));
@@ -1154,10 +1138,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupThemeToggle();
   renderProducts();
   setupOrderPage();
-  setupCarousel();
   setupCollage();
   setupReviewsCarousel()
-  setupMenu();
   setupBottomNav();
   setupDelivery();
   setupBadgeRotation();

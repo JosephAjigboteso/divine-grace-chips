@@ -5,29 +5,29 @@ Each product has its own folder here, named after the product's `id` in `script.
 | Folder | Product |
 |---|---|
 | `ziploc/` | Ziploc (₦1,000) |
-| `refill-2000/` | Refill Pack (₦2,000) |
+| `refill-2000/` | Refill Pack 2k (₦2,000) |
 | `plantain-dozen/` | Plantain Chips — Dozen (₦3,000) |
 | `potato-dozen/` | Potato Chips — Dozen (₦3,000) |
 | `small-jar/` | Small Jar (₦3,500) |
-| `refill-4000/` | Refill Pack (₦4,000) |
+| `refill-4000/` | Refill Pack 4k (₦4,000) |
 | `big-jar/` | Big Jar (₦5,500) |
-| `refill-6000/` | Refill Pack (₦6,000) |
+| `refill-6000/` | Refill Pack 6k (₦6,000) |
 | `_placeholder/` | Shared stand-in photos (see below) |
 
 ## Adding photos to a product
 
 1. Put the photos in the product's folder and number them in the order you want them in the slider:
-   `1.png`, `2.jpg`, `3.jpg` …
+   `1.webp`, `2.jpg`, `3.jpg` …
 2. Open `script.js`, find the product in `const products = [ … ]` and list the files:
 
    ```js
-   { id: 'big-jar', … photos: ['1.png', '2.jpg', '3.jpg'], … }
+   { id: 'big-jar', … photos: ['1.webp', '2.jpg', '3.jpg'], … }
    ```
 
 That's it. The product card, the product details slider and the order page all update automatically.
 
 - **Photo 1 is the main photo.** It is shown on the product card, on the order page and first in the slider.
-- **Transparent PNGs** (pack cut out, no background) are shown whole on a white background. Use this for the main photo.
+- **Transparent WebP or PNG** (pack cut out, no background) are shown whole on a white background. Use this for the main photo.
 - **JPGs** fill the whole slider frame, so they suit close-ups, lifestyle shots or photos with a real background.
 
 ## Placeholders
@@ -38,7 +38,8 @@ To switch them off for one product, add `placeholders: false` to it in `script.j
 
 ## Photo tips
 
-- About **1200–1600 px** on the longest side is plenty. Bigger files only make the page slower.
-- Keep JPGs under about **400 KB** (export at roughly 80% quality).
+- About **1000–1400 px** on the longest side is plenty. Bigger files only make the page slower.
+- Keep each photo under about **250 KB**. **WebP** is best (often 10× smaller than PNG at the same quality);
+  free converters such as squoosh.app do this in the browser. JPG at about 80% quality is fine too.
 - Shoot on a plain light background in good daylight, and keep the label readable.
 - Use lowercase file names without spaces, e.g. `3.jpg`, not `Big Jar Photo 3.JPG`.

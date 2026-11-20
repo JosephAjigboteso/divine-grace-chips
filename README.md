@@ -18,12 +18,18 @@ A static website (HTML, CSS, JavaScript; no build step) plus a front-end admin d
 | `admin.css`, `admin.js` | Admin dashboard styles and screens |
 | `admin-data.js` | The admin **data layer**: the only place the dashboard reads or saves data |
 | `asset/products/` | One folder of photos per product; see `asset/products/README.md` |
+| `asset/icons/`, `asset/og-image.jpg` | Browser icon and the link-preview card shown on WhatsApp etc. |
 
 ## Before going live
 
 - **Web3Forms key:** replace `YOUR_WEB3FORMS_ACCESS_KEY` in `order.html`.
 - **Bank account:** replace the placeholder `PAYMENT_ACCOUNT` details in `script.js`.
 - **Product weights:** the weights in `script.js` are placeholders.
+- **WhatsApp number:** orders from "Send my order on WhatsApp" go to `BUSINESS_WHATSAPP` in `script.js`
+  (currently 0815 725 5322 written as `2348157255322`).
+- **Link preview image:** in the `<head>` of `index.html`, `products.html` and `order.html`, change
+  `og:image` from `asset/og-image.jpg` to the full address once the site is live
+  (e.g. `https://your-site.com/asset/og-image.jpg`). WhatsApp only shows the preview with a full address.
 - **Admin:** `admin.html` uses a demo sign-in (`admin@divinegrace.ng` / `demo1234`) and sample orders saved
   in the browser only. Do not rely on it until it is connected to a backend (below).
 
