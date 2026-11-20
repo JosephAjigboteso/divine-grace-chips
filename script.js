@@ -417,7 +417,7 @@ function setupOrderPage() {
     let error = '';
     if (!value) error = showEmpty ? 'Please enter your phone number.' : '';
     else if (/[^\d\s\-+().]/.test(value)) error = 'Use numbers only, e.g. 08012345678.';
-    else if (!normalisePhone(value)) error = 'Enter a valid Nigerian mobile number, e.g. 08012345678 or +2348012345678.';
+    else if (!normalisePhone(value)) error = 'Enter a valid mobile number, e.g. 08012345678 or +2348012345678.';
     phoneField.classList.toggle('has-error', !!error);
     phone.setAttribute('aria-invalid', error ? 'true' : 'false');
     phoneHint.textContent = error || PHONE_HINT;
