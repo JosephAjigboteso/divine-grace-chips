@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Divine Grace Chips | Admin</title>
+  <script>
+  (function () {
+    try {
+      var saved = sessionStorage.getItem('dg-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  })();
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..800,0..100;1,9..144,400..800,0..100&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+  <!-- ===================== SIGN IN ===================== -->
+  <main class="admin-login" id="loginView" hidden>
+    <form class="login-card" id="loginForm" novalidate>
+      <div class="login-brand">
+        <img src="asset/logo.png" alt="" width="44" height="44">
+        <span>Divine Grace <strong>Chips</strong></span>
+      </div>
+      <h1>Admin sign in</h1>
+      <p class="login-sub">Manage orders, products and deliveries.</p>
+
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" autocomplete="username" placeholder="you@divinegrace.ng" required>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <div class="password-wrap">
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required>
+          <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+        </div>
+      </div>
+      <button class="btn btn-primary login-submit" type="submit" id="loginSubmit">Sign in <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+      <div class="form-message" id="loginMessage" role="alert"></div>
+
+      <div class="demo-note">
+        <strong><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo mode</strong>
+        <span>Sample data, no backend yet. Sign in with<br><code>admin@divinegrace.ng</code> / <code>demo1234</code></span>
+        <button type="button" class="demo-fill" id="demoFill">Fill in demo details</button>
+      </div>
+      <a class="login-back" href="index.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to website</a>
+    </form>
+  </main>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <div class="admin-app" id="appView" hidden>
+    <aside class="admin-sidebar">
+      <a class="admin-brand" href="admin.html">
+        <img src="asset/logo.png" alt="" width="36" height="36">
+        <span>Divine Grace <strong>Admin</strong></span>
+      </a>
+      <nav class="admin-nav" aria-label="Admin sections">
+        <button type="button" class="admin-nav-link is-active" data-view="overview"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Overview</span></button>
+        <button type="button" class="admin-nav-link" data-view="orders"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Orders</span><em class="nav-badge" id="pendingBadge" hidden></em></button>
+        <button type="button" class="admin-nav-link" data-view="products"><i class="fa-solid fa-cookie-bite" aria-hidden="true"></i><span>Products</span></button>
+      </nav>
+      <div class="admin-sidebar-foot">
+        <a class="admin-side-link" href="index.html" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span>View website</span></a>
+        <button type="button" class="admin-side-link theme-toggle" aria-label="Toggle dark mode"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Theme</span></button>
+        <button type="button" class="admin-side-link" id="signOut"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div>
+          <h1 id="viewTitle">Overview</h1>
+          <p id="viewSub">How the business is doing.</p>
+        </div>
+        <div class="admin-user">
+          <span class="demo-pill" title="Showing sample data until a backend is connected"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo data</span>
+          <span class="admin-avatar" aria-hidden="true">A</span>
+          <span class="admin-user-email" id="adminEmail"></span>
+        </div>
+      </header>
+
+      <!-- ===== OVERVIEW ===== -->
+      <section class="admin-view" data-view="overview" aria-labelledby="viewTitle">
+        <div class="filter-row" role="group" aria-label="Date range">
+          <button type="button" class="range-btn" data-range="7">Last 7 days</button>
+          <button type="button" class="range-btn is-active" data-range="30">Last 30 days</button>
+          <button type="button" class="range-btn" data-range="90">Last 90 days</button>
+        </div>
+
+        <div class="kpi-row" id="kpis"></div>
+
+        <div class="overview-grid">
+          <article class="admin-card chart-card">
+            <header class="card-head">
+              <div>
+                <h2>Deliveries per day</h2>
+                <p id="deliveriesSub">Orders delivered each day</p>
+              </div>
+              <button type="button" class="table-toggle" id="deliveriesTableToggle" aria-pressed="false"><i class="fa-solid fa-table" aria-hidden="true"></i> Table</button>
+            </header>
+            <div class="chart" id="deliveriesChart"></div>
+            <div class="chart-table" id="deliveriesTable" hidden></div>
+          </article>
+
+          <article class="admin-card">
+            <header class="card-head">
+              <div>
+                <h2>Deliveries by location</h2>
+                <p>Share of delivered orders</p>
+              </div>
+            </header>
+            <div class="bars" id="locationBars"></div>
+          </article>
+
+          <article class="admin-card attention-card">
+            <header class="card-head">
+              <div>
+                <h2>Needs attention</h2>
+                <p>Payments to confirm and orders on the way</p>
+              </div>
+              <button type="button" class="link-btn" data-goto="orders">All orders <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+            </header>
+            <ul class="attention-list" id="attentionList"></ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ===== ORDERS ===== -->
+      <section class="admin-view" data-view="orders" hidden>
+        <div class="orders-toolbar">
+          <div class="status-tabs" id="statusTabs" role="tablist" aria-label="Filter by status"></div>
+          <label class="search-box">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" id="orderSearch" placeholder="Search name, phone or reference" aria-label="Search orders">
+          </label>
+        </div>
+        <div class="admin-card table-card">
+          <table class="orders-table">
+            <thead>
+              <tr><th>Order</th><th>Customer</th><th>Items</th><th>Location</th><th class="num">Total</th><th>Status</th><th><span class="sr-only">Open</span></th></tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+          <p class="table-empty" id="ordersEmpty" hidden>No orders match.</p>
+          <button type="button" class="btn btn-light more-btn" id="ordersMore" hidden>Show more</button>
+        </div>
+      </section>
+
+      <!-- ===== PRODUCTS ===== -->
+      <section class="admin-view" data-view="products" hidden>
+        <div class="products-toolbar">
+          <p class="products-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Hidden products can't be ordered on the website. Changes to price and weight apply to new orders.</p>
+          <button type="button" class="btn btn-primary" id="addProductBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add product</button>
+        </div>
+        <div class="product-admin-list" id="productList"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- order details drawer -->
+  <div class="drawer-overlay" id="orderDrawer" hidden>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <header class="drawer-head">
+        <div>
+          <span class="drawer-kicker">Order</span>
+          <h2 id="drawerTitle"></h2>
+        </div>
+        <button type="button" class="icon-btn" id="drawerClose" aria-label="Close order details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      </header>
+      <div class="drawer-body" id="drawerBody"></div>
+      <footer class="drawer-foot" id="drawerActions"></footer>
+    </aside>
+  </div>
+
+  <!-- add / edit product -->
+  <div class="drawer-overlay modal-overlay" id="productModal" hidden>
+    <form class="modal" id="productForm" role="dialog" aria-modal="true" aria-labelledby="productModalTitle" novalidate>
+      <header class="drawer-head">
+        <h2 id="productModalTitle">Add product</h2>
+        <button type="button" class="icon-btn" id="productModalClose" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      </header>
+      <div class="modal-body">
+        <div class="field"><label for="pName">Name <span>*</span></label><input id="pName" required placeholder="e.g. Party Pack"></div>
+        <div class="field-row">
+          <div class="field"><label for="pPrice">Price (₦) <span>*</span></label><input id="pPrice" type="number" min="0" step="50" required placeholder="2500"></div>
+          <div class="field"><label for="pWeight">Weight</label><input id="pWeight" placeholder="e.g. 300 g"></div>
+        </div>
+        <div class="field">
+          <label for="pGroup">Category</label>
+          <select id="pGroup"><option value="sachet">Sachets &amp; everyday snacks</option><option value="jar">Jars &amp; refills</option></select>
+        </div>
+        <div class="field"><label for="pDesc">Description</label><textarea id="pDesc" rows="3" placeholder="One or two sentences shown on the product card"></textarea></div>
+        <div class="field">
+          <label for="pPhoto">Main photo</label>
+          <input id="pPhoto" type="file" accept="image/*">
+          <small class="field-hint">Preview only for now: photo uploads will be saved once the backend is connected.</small>
+        </div>
+        <div class="form-message" id="productFormMsg" role="alert"></div>
+      </div>
+      <footer class="drawer-foot">
+        <button type="button" class="btn btn-light" id="productCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save product</button>
+      </footer>
+    </form>
+  </div>
+
+  <div class="chart-tooltip" id="chartTooltip" role="status" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="script.js"></script>
+  <script src="admin-data.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
