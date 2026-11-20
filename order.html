@@ -72,6 +72,7 @@
             <button type="button" class="product-picker-close" id="closePickerBtn" aria-label="Close product list"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           </div>
           <div class="product-options" id="productOptions"></div>
+          <p class="product-picker-hint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Want the same pack in both ripe and unripe? Pick it again and it's added as a separate line.</p>
         </div>
 
         <button class="btn btn-light add-product-btn" id="addProductBtn" type="button" aria-controls="productPicker" aria-expanded="false" hidden>
@@ -92,7 +93,7 @@
           <p>Fill in your details and we will contact you to confirm the order.</p>
         </div>
 
-        <form id="orderForm">
+        <form id="orderForm" novalidate>
           <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
           <input type="hidden" name="subject" value="New Divine Grace Chips Order">
           <input type="hidden" name="from_name" value="Divine Grace Chips Website">
@@ -108,9 +109,10 @@
             <input id="name" name="name" type="text" placeholder="Enter your full name" autocomplete="name" required>
           </div>
 
-          <div class="field">
+          <div class="field" id="phoneField">
             <label for="phone">Phone Number <span>*</span></label>
-            <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="e.g. 08012345678" autocomplete="tel" required>
+            <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="e.g. 08012345678" autocomplete="tel" maxlength="17" required aria-describedby="phoneHint">
+            <small class="field-hint" id="phoneHint">Nigerian mobile number, e.g. 08012345678 or +2348012345678</small>
           </div>
 
           <div class="field">
@@ -118,14 +120,42 @@
             <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email">
           </div>
 
+          <fieldset class="field choice-field">
+            <legend>Type of Order <span>*</span></legend>
+            <div class="choice-group">
+              <label class="choice">
+                <input type="radio" name="order_type" value="Personal" required>
+                <span><i class="fa-solid fa-user" aria-hidden="true"></i> Personal</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="order_type" value="Event">
+                <span><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Event</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="order_type" value="Reseller">
+                <span><i class="fa-solid fa-store" aria-hidden="true"></i> Reseller</span>
+              </label>
+            </div>
+          </fieldset>
+
           <div class="field">
-            <label for="address">Delivery Address <span>*</span></label>
-            <textarea id="address" name="address" rows="3" placeholder="Enter your delivery / pick-up address" required></textarea>
+            <label for="location">Delivery Location <span>*</span></label>
+            <select id="location" name="delivery_location" required>
+              <option value="" selected disabled>Select a delivery location</option>
+              <option value="UNILAG">UNILAG</option>
+              <option value="Charity Pavilion">Charity Pavilion</option>
+              <option value="Home Delivery">Home Delivery</option>
+            </select>
+          </div>
+
+          <div class="field" id="addressField" hidden>
+            <label for="address">Home Address <span>*</span></label>
+            <textarea id="address" name="address" rows="3" placeholder="House number, street, area and a nearby landmark" autocomplete="street-address"></textarea>
           </div>
 
           <div class="field">
-            <label for="notes">Additional Note <small>(optional)</small></label>
-            <textarea id="notes" name="notes" rows="3" placeholder="Anything else we should know?"></textarea>
+            <label for="review">Drop a Review <small>(optional)</small></label>
+            <textarea id="review" name="review" rows="3" placeholder="Tried our chips before? Tell us what you think."></textarea>
           </div>
 
           <button class="btn btn-primary submit-btn" type="submit" id="submitBtn">

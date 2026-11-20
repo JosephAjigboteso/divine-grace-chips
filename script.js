@@ -262,7 +262,7 @@ function setupOrderPage() {
 
   // A product chosen on the products page (order.html?product=big-jar) starts the order
   const start = find(new URLSearchParams(location.search).get('product'));
-  if (start) cart.push({ id: start.id, qty: 1, type: 'Ripe' });
+  if (start) cart.push({ id: start.id, qty: 1, type: hasType(start) ? 'Ripe' : '' });
 
   /* product picker */
   options.innerHTML = products.map(p => `
@@ -271,6 +271,33 @@ function setupOrderPage() {
       <span>${p.name}<small>${money.format(p.price)}</small></span>
       <i class="fa-solid fa-circle-check product-option-check" aria-hidden="true"></i>
     </button>`).join('');
+
+  /* Each order line is a product + its type, so the same pack can be
+     ordered ripe AND unripe as two separate lines. */
+  const addProduct = id => {
+    const product = find(id);
+    if (!hasType(product)) {                                  // potato: one line, just add one
+      const line = cart.find(l => l.id === id);
+      if (line) line.qty = Math.min(MAX_QTY, line.qty + 1);
+      else cart.push({ id, qty: 1, type: '' });
+      return;
+    }
+    const lines = cart.filter(l => l.id === id);
+    const missing = ['Ripe', 'Unripe'].find(t => !lines.some(l => l.type === t));
+    if (missing) cart.push({ id, qty: 1, type: missing });   // add the type not in the order yet
+    else lines[lines.length - 1].qty = Math.min(MAX_QTY, lines[lines.length - 1].qty + 1);
+  };
+
+  // two lines with the same product and type become one
+  const mergeDuplicates = () => {
+    const merged = [];
+    cart.forEach(line => {
+      const same = merged.find(l => l.id === line.id && l.type === line.type);
+      if (same) same.qty = Math.min(MAX_QTY, same.qty + line.qty);
+      else merged.push(line);
+    });
+    cart = merged;
+  };
 
   const setPicker = open => {
     picker.hidden = !open;
@@ -282,9 +309,7 @@ function setupOrderPage() {
   options.addEventListener('click', e => {
     const btn = e.target.closest('.product-option');
     if (!btn) return;
-    const line = cart.find(l => l.id === btn.dataset.id);
-    if (line) line.qty = Math.min(MAX_QTY, line.qty + 1);   // already in the order: one more
-    else cart.push({ id: btn.dataset.id, qty: 1, type: 'Ripe' });
+    addProduct(btn.dataset.id);
     clearMessage();
     setPicker(false);
   });
@@ -309,6 +334,7 @@ function setupOrderPage() {
   itemsEl.addEventListener('change', e => {
     if (!e.target.matches('select[data-action="type"]')) return;
     cart[Number(e.target.closest('[data-index]').dataset.index)].type = e.target.value;
+    mergeDuplicates();
     render();
   });
 
@@ -327,7 +353,7 @@ function setupOrderPage() {
         <li class="order-item" data-index="${i}">
           <img class="order-item-img" src="${p.image}" alt="">
           <div class="order-item-info">
-            <strong>${p.name}</strong>
+            <strong>${p.name}${line.type && cart.filter(l => l.id === line.id).length > 1 ? ` <em class="order-item-tag">${line.type}</em>` : ''}</strong>
             <span>${money.format(p.price)} each</span>
           </div>
           <button type="button" class="order-item-remove" data-action="remove" aria-label="Remove ${p.name}">
@@ -369,6 +395,52 @@ function setupOrderPage() {
     $('totalField').value = money.format(orderTotal());
   };
 
+  /* ---- form fields ---- */
+  const phone = $('phone');
+  const phoneField = $('phoneField');
+  const phoneHint = $('phoneHint');
+  const PHONE_HINT = phoneHint.textContent;
+  const locationSelect = $('location');
+  const addressField = $('addressField');
+  const address = $('address');
+  const orderTypeField = form.querySelector('.choice-field');
+
+  // Nigerian mobile: 0 + 10 digits (070/080/081/090/091…) or +234 / 234 + 10 digits
+  const normalisePhone = value => {
+    const digits = value.replace(/[\s\-().]/g, '');
+    const m = digits.match(/^(?:\+?234|0)([789][01]\d{8})$/);
+    return m ? '0' + m[1] : null;
+  };
+
+  const checkPhone = (showEmpty = false) => {
+    const value = phone.value.trim();
+    let error = '';
+    if (!value) error = showEmpty ? 'Please enter your phone number.' : '';
+    else if (/[^\d\s\-+().]/.test(value)) error = 'Use numbers only, e.g. 08012345678.';
+    else if (!normalisePhone(value)) error = 'Enter a valid Nigerian mobile number, e.g. 08012345678 or +2348012345678.';
+    phoneField.classList.toggle('has-error', !!error);
+    phone.setAttribute('aria-invalid', error ? 'true' : 'false');
+    phoneHint.textContent = error || PHONE_HINT;
+    return !error;
+  };
+
+  phone.addEventListener('blur', () => checkPhone(false));
+  phone.addEventListener('input', () => { if (phoneField.classList.contains('has-error')) checkPhone(false); });
+
+  // Home Delivery needs an address
+  const syncLocation = () => {
+    const home = locationSelect.value === 'Home Delivery';
+    addressField.hidden = !home;
+    address.required = home;
+    if (!home) address.value = '';
+  };
+  locationSelect.addEventListener('change', syncLocation);
+  syncLocation();
+
+  form.addEventListener('change', e => {
+    if (e.target.name === 'order_type') orderTypeField.classList.remove('has-error');
+  });
+
   const clearMessage = () => { message.className = 'form-message'; message.textContent = ''; };
   const showError = text => { message.className = 'form-message error'; message.textContent = text; };
 
@@ -382,6 +454,16 @@ function setupOrderPage() {
       summary.classList.remove('needs-product'); void summary.offsetWidth; summary.classList.add('needs-product');
       return;
     }
+
+    // phone: our own check; then the browser checks the other required fields
+    if (!checkPhone(true)) {
+      showError('Please check your phone number.');
+      phone.focus();
+      return;
+    }
+    if (!form.querySelector('[name="order_type"]:checked')) orderTypeField.classList.add('has-error');
+    if (!form.reportValidity()) return;
+    phone.value = normalisePhone(phone.value);   // send it in one clean format, e.g. 08012345678
 
     const key = form.querySelector('[name="access_key"]').value.trim();
     if (!key || key === 'YOUR_WEB3FORMS_ACCESS_KEY') {
@@ -404,6 +486,7 @@ function setupOrderPage() {
       message.className = 'form-message success';
       message.textContent = 'Order received successfully! We will contact you shortly to confirm.';
       form.reset();
+      syncLocation();
       cart = [];
       history.replaceState(null, '', location.pathname);   // drop ?product= from the address
       render();
