@@ -727,178 +727,153 @@ function setupCounters() {
 const reviews = [
   {
     name: 'Amaka O.',
+    tag: 'Big Jar regular',
     date: 'March 2026',
-    rating: 5,
     text: 'The crunch is unbeatable. Every pack tastes fresh, and my family finishes them so fast. The big jar is now a permanent fixture in our home.'
   },
   {
     name: 'Tunde A.',
+    tag: 'Office orders',
     date: 'February 2026',
-    rating: 5,
     text: 'I order for my office every month. Clean packaging, great taste, and the refill packs make it easy to keep stocked without waste.'
   },
   {
     name: 'Chidinma E.',
+    tag: 'Party order',
     date: 'February 2026',
-    rating: 5,
     text: 'Ordered for a small party and everyone asked where I got them from. Divine Grace chips never disappoint — fresh and perfectly seasoned.'
   },
   {
     name: 'Ibrahim M.',
+    tag: 'Plantain chips',
     date: 'January 2026',
-    rating: 5,
     text: 'The plantain chips taste like they were made that morning. You can tell the difference — it\'s the freshness that keeps me coming back.'
   },
   {
     name: 'Blessing N.',
+    tag: 'Ordered on WhatsApp',
     date: 'January 2026',
-    rating: 5,
     text: 'Quick response on WhatsApp, fast delivery, and the chips arrived crisp and well packed. Will definitely order again.'
   }
 ];
 
-/* ---------- REVIEWS CAROUSEL ---------- */
+/* ---------- REVIEWS CAROUSEL ----------
+   Featured quote that cross-fades; story-style progress bars advance
+   every 6 s. Pauses on hover / focus / touch, off screen and in hidden tabs. */
 function setupReviewsCarousel() {
   const root = document.querySelector('[data-reviews-carousel]');
-  const track = document.querySelector('[data-reviews-track]');
-  const dotsWrap = document.querySelector('[data-reviews-dots]');
-  if (!root || !track || !dotsWrap) return;
+  const stage = document.querySelector('[data-reviews-track]');
+  const bars = document.querySelector('[data-reviews-dots]');
+  if (!root || !stage || !bars) return;
 
-  /* --- Build the review cards from data --- */
-  const buildStars = (rating) => {
-    let html = '';
-    for (let i = 0; i < 5; i++) {
-      const filled = i < rating;
-      html += `<i class="${filled ? 'fa-solid' : 'fa-regular'} fa-star" aria-hidden="true"></i>`;
-    }
-    return html;
-  };
+  const section = root.closest('.reviews-section') || root;
+  const prevBtn = section.querySelector('.reviews-prev');
+  const nextBtn = section.querySelector('.reviews-next');
+  const currentEl = section.querySelector('[data-reviews-current]');
+  const totalEl = section.querySelector('[data-reviews-total]');
 
-  const escapeHtml = (str) =>
-    String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+  const escapeHtml = str => String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  const initials = name => name.split(/\s+/).map(w => w[0]).join('').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase();
+  const pad = n => String(n).padStart(2, '0');
 
-  const buildCard = (r) => `
-    <article class="review-card">
-      <div class="review-stars" aria-label="${r.rating} out of 5 stars">
-        ${buildStars(r.rating)}
-      </div>
-      <p class="review-text">&ldquo;${escapeHtml(r.text)}&rdquo;</p>
-      <div class="review-author">
-        <span class="review-name">${escapeHtml(r.name)}</span>
-        <span class="review-date">${escapeHtml(r.date)}</span>
-      </div>
-    </article>
-  `;
-
-  /* Empty state — no reviews */
   if (!reviews.length) {
-    root.innerHTML = '<p class="reviews-empty">No reviews yet — check back soon.</p>';
+    section.querySelector('.reviews-layout').innerHTML = '<p class="reviews-empty">No reviews yet — check back soon.</p>';
     return;
   }
 
-  track.innerHTML = reviews.map(buildCard).join('');
+  stage.innerHTML = reviews.map((r, i) => `
+    <figure class="review-card" aria-hidden="true" id="review-${i}">
+      <span class="review-mark" aria-hidden="true">&ldquo;</span>
+      <blockquote class="review-text">${escapeHtml(r.text)}</blockquote>
+      <figcaption class="review-author">
+        <span class="review-avatar" aria-hidden="true">${initials(r.name)}</span>
+        <span class="review-who">
+          <span class="review-name">${escapeHtml(r.name)}</span>
+          ${r.tag ? `<span class="review-tag">${escapeHtml(r.tag)}</span>` : ''}
+        </span>
+        <span class="review-date">${escapeHtml(r.date)}</span>
+      </figcaption>
+    </figure>`).join('');
 
-  const slides = Array.from(track.children);
-  const prevBtn = root.querySelector('.reviews-prev');
-  const nextBtn = root.querySelector('.reviews-next');
+  bars.innerHTML = reviews.map((r, i) =>
+    `<button type="button" aria-label="Show review ${i + 1} of ${reviews.length}" aria-controls="review-${i}"><span></span></button>`).join('');
 
+  const cards = Array.from(stage.children);
+  const barBtns = Array.from(bars.children);
+  if (totalEl) totalEl.textContent = pad(cards.length);
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const DURATION = 6000;
   let index = 0;
-  let autoplayTimer = null;
-  let isPaused = false;
+  let timer = null;
+  const pauses = new Set();   // reasons the autoplay is paused (hover, focus, touch, offscreen, hidden)
 
-  /* Build dots */
-  slides.forEach((_, i) => {
-    const dot = document.createElement('button');
-    dot.type = 'button';
-    dot.setAttribute('aria-label', `Go to review ${i + 1}`);
-    if (i === 0) dot.classList.add('active');
-    dot.addEventListener('click', () => go(i));
-    dotsWrap.appendChild(dot);
+  const go = i => {
+    index = (i + cards.length) % cards.length;
+    cards.forEach((c, n) => {
+      c.classList.toggle('is-active', n === index);
+      c.setAttribute('aria-hidden', n === index ? 'false' : 'true');
+    });
+    barBtns.forEach((b, n) => {
+      b.classList.toggle('is-done', n < index);
+      b.classList.remove('is-active');
+      if (n === index) { void b.offsetWidth; b.classList.add('is-active'); }   // restart the fill
+      b.setAttribute('aria-current', n === index ? 'true' : 'false');
+    });
+    if (currentEl) currentEl.textContent = pad(index + 1);
+  };
+
+  /* Autoplay follows the active bar's fill animation, so pausing the
+     animation (hover etc.) pauses the slideshow at exactly the same point. */
+  bars.addEventListener('animationend', e => {
+    if (e.target.parentElement === barBtns[index] && !reduce.matches) go(index + 1);
   });
 
-  const dots = Array.from(dotsWrap.children);
+  const setPaused = (reason, on) => {
+    on ? pauses.add(reason) : pauses.delete(reason);
+    root.classList.toggle('is-paused', pauses.size > 0);
+  };
 
-  function go(i) {
-    index = (i + slides.length) % slides.length;
-    track.style.transform = `translateX(-${index * 100}%)`;
-    dots.forEach((d, n) => d.classList.toggle('active', n === index));
+  root.style.setProperty('--review-time', `${DURATION}ms`);
+
+  if (prevBtn) prevBtn.addEventListener('click', () => go(index - 1));
+  if (nextBtn) nextBtn.addEventListener('click', () => go(index + 1));
+  barBtns.forEach((b, i) => b.addEventListener('click', () => go(i)));
+
+  root.addEventListener('mouseenter', () => setPaused('hover', true));
+  root.addEventListener('mouseleave', () => setPaused('hover', false));
+  root.addEventListener('focusin', () => setPaused('focus', true));
+  root.addEventListener('focusout', () => setPaused('focus', false));
+  document.addEventListener('visibilitychange', () => setPaused('hidden', document.hidden));
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => setPaused('offscreen', !entries[0].isIntersecting), { threshold: 0.3 }).observe(root);
   }
 
-  function next() { go(index + 1); }
-  function prev() { go(index - 1); }
-
-  if (prevBtn) prevBtn.addEventListener('click', () => { prev(); restartAutoplay(); });
-  if (nextBtn) nextBtn.addEventListener('click', () => { next(); restartAutoplay(); });
-
-  function startAutoplay() {
-    stopAutoplay();
-    autoplayTimer = setInterval(() => {
-      if (!isPaused) next();
-    }, 6000);
-  }
-
-  function stopAutoplay() {
-    if (autoplayTimer) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = null;
-    }
-  }
-
-  function restartAutoplay() {
-    stopAutoplay();
-    startAutoplay();
-  }
-
-  root.addEventListener('mouseenter', () => { isPaused = true; });
-  root.addEventListener('mouseleave', () => { isPaused = false; });
-
-  document.addEventListener('visibilitychange', () => {
-    isPaused = document.hidden;
-  });
-
-  /* Touch swipe */
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let isSwiping = false;
-
-  root.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    isSwiping = true;
-    isPaused = true;
+  /* Swipe */
+  let sx = 0, sy = 0, swiping = false;
+  root.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiping = true; setPaused('touch', true);
   }, { passive: true });
-
-  root.addEventListener('touchmove', (e) => {
-    if (!isSwiping) return;
-    const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - touchStartY;
-    if (Math.abs(dy) > Math.abs(dx)) isSwiping = false;
+  root.addEventListener('touchmove', e => {
+    if (!swiping) return;
+    if (Math.abs(e.touches[0].clientY - sy) > Math.abs(e.touches[0].clientX - sx)) swiping = false;
   }, { passive: true });
-
-  root.addEventListener('touchend', (e) => {
-    if (!isSwiping) { isPaused = false; return; }
-    isSwiping = false;
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (dx > 50) prev();
-    else if (dx < -50) next();
-    isPaused = false;
+  root.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    if (swiping && Math.abs(dx) > 50) go(index + (dx < 0 ? 1 : -1));
+    swiping = false; setPaused('touch', false);
   });
 
   /* Keyboard */
-  root.setAttribute('tabindex', '0');
-  root.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') { prev(); restartAutoplay(); }
-    if (e.key === 'ArrowRight') { next(); restartAutoplay(); }
+  root.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') go(index - 1);
+    if (e.key === 'ArrowRight') go(index + 1);
   });
 
-  /* Start */
   go(0);
-  startAutoplay();
 }
 
 /* ---------- PRODUCT IMAGE VIEWER ---------- */

@@ -312,27 +312,26 @@
 
   <!-- ===== CUSTOMER REVIEWS ===== -->
 <section class="reviews-section" id="reviews">
-  <div class="container">
-    <div class="section-heading">
+  <div class="container reviews-layout">
+    <div class="reviews-intro">
       <span class="eyebrow">WHAT CUSTOMERS SAY</span>
-      <h2>Real reviews. Real crunch.</h2>
-      <p>Hear from people who have enjoyed Divine Grace Chips.</p>
+      <h2>Real reviews. <br>Real crunch.</h2>
+      <p>Hear from people who have enjoyed Divine Grace Chips at home, at work and at their celebrations.</p>
+
+      <div class="reviews-controls">
+        <button class="reviews-nav reviews-prev" type="button" aria-label="Previous review">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        </button>
+        <button class="reviews-nav reviews-next" type="button" aria-label="Next review">
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </button>
+        <span class="reviews-count" aria-hidden="true"><strong data-reviews-current>01</strong> / <span data-reviews-total>05</span></span>
+      </div>
     </div>
 
-    <div class="reviews-carousel" data-reviews-carousel>
-      <button class="reviews-nav reviews-prev" type="button" aria-label="Previous review">
-        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-      </button>
-
-      <div class="reviews-viewport">
-        <div class="reviews-track" data-reviews-track></div>
-      </div>
-
-      <button class="reviews-nav reviews-next" type="button" aria-label="Next review">
-        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </button>
-
-      <div class="reviews-dots" data-reviews-dots></div>
+    <div class="reviews-carousel" data-reviews-carousel tabindex="0" aria-roledescription="carousel" aria-label="Customer reviews">
+      <div class="reviews-stage" data-reviews-track aria-live="polite"></div>
+      <div class="reviews-progress" data-reviews-dots></div>
     </div>
   </div>
 </section>
