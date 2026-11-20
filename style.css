@@ -2505,168 +2505,338 @@ footer {
 }
 
 /* ---------- ABOUT DELIVERY ANIMATION ----------
-   An inline SVG scene; script.js (setupDelivery) moves the person.
-   Colours come from the variables below so it follows light / dark mode. */
+   A delivery-tracker style scene: a map (inline SVG), the order travelling
+   along the route, and a status card. script.js (setupDelivery) drives it.
+   Map colours are variables so it follows light / dark mode. */
 .delivery-animation {
-  --dl-sky-top: #fff6d4;
-  --dl-sky-bottom: var(--surface);
-  --dl-sun: #ffe9a3;
-  --dl-cloud: #ffffff;
-  --dl-ground: #f1e9d8;
-  --dl-kerb: #e2d6bd;
-  --dl-tiles: #e6dcc6;
-  --dl-wall: #ffffff;
-  --dl-line: #e3d7bf;
-  --dl-window: #e9f4f6;
-  --dl-shelf: #d9c9a6;
-  --dl-door: #f6eedb;
-  --dl-sign: #2b2117;
-  --dl-sign-2: #2f7a50;
-  --dl-awning: #ffffff;
-  --dl-shadow: rgba(60, 42, 8, 0.16);
-  --dl-bubble: #ffffff;
-  --dl-bubble-text: #201b13;
+  --map-land: #f5efe2;
+  --map-block: #ebe2cf;
+  --map-park: #dde9cf;
+  --map-tree: #c9dcb4;
+  --map-road: #ffffff;
+  --map-road-edge: #e2d6bd;
+  --map-label: #b0a28a;
+  --map-route: #cbbd9f;
+  --map-pin-shop: #2b2117;
+  --map-pin-home: #f2b90c;
 
   position: relative;
   height: 480px;
   overflow: hidden;
   isolation: isolate;
-  background: var(--dl-sky-bottom);
+  background: var(--map-land);
 }
 
 [data-theme="dark"] .delivery-animation {
-  --dl-sky-top: #2a2310;
-  --dl-sky-bottom: var(--surface);
-  --dl-sun: #4a3a0c;
-  --dl-cloud: #3a3428;
-  --dl-ground: #26231d;
-  --dl-kerb: #332e25;
-  --dl-tiles: #2e2a22;
-  --dl-wall: #2b2822;
-  --dl-line: #3d372d;
-  --dl-window: #1f2a2e;
-  --dl-shelf: #4a4336;
-  --dl-door: #352f25;
-  --dl-sign: #0f0d0a;
-  --dl-sign-2: #23573a;
-  --dl-awning: #3a3428;
-  --dl-shadow: rgba(0, 0, 0, 0.45);
-  --dl-bubble: #f7f2e8;
-  --dl-bubble-text: #201b13;
+  --map-land: #1a1814;
+  --map-block: #221f1a;
+  --map-park: #1d261a;
+  --map-tree: #26331f;
+  --map-road: #2d2923;
+  --map-road-edge: #2d2923;
+  --map-label: #6b6252;
+  --map-route: #4f473a;
+  --map-pin-shop: #0d0b08;
+  --map-pin-home: #f2b90c;
 }
 
-.delivery-svg {
-  display: block;
+.dl-map {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  overflow: visible;   /* sky and pavement extend past the drawing to fill any card shape */
+  display: block;
 }
 
-.dl-sky-top    { stop-color: var(--dl-sky-top); }
-.dl-sky-bottom { stop-color: var(--dl-sky-bottom); }
-.dl-sun        { fill: var(--dl-sun); }
-.dl-cloud      { fill: var(--dl-cloud); opacity: 0.9; }
-.dl-ground     { fill: var(--dl-ground); }
-.dl-kerb       { fill: var(--dl-kerb); }
-.dl-tiles      { fill: var(--dl-tiles); }
+.dl-land   { fill: var(--map-land); }
+.dl-blocks { fill: var(--map-block); }
+.dl-park   { fill: var(--map-park); }
+.dl-trees  { fill: var(--map-tree); }
 
-.dl-cloud-1 { animation: dlCloud 38s linear infinite; }
-.dl-cloud-2 { animation: dlCloud 52s linear infinite; animation-delay: -26s; }
-.dl-cloud-1 > * { transform: translate(0, 58px); }
-.dl-cloud-2 > * { transform: translate(0, 92px); }
-
-@keyframes dlCloud {
-  from { transform: translateX(-80px); }
-  to   { transform: translateX(680px); }
-}
-
-.dl-wall       { fill: var(--dl-wall); stroke: var(--dl-line); stroke-width: 2; }
-.dl-signboard  { fill: var(--dl-sign); }
-.dl-signboard-2 { fill: var(--dl-sign-2); }
-.dl-signtext {
-  fill: #ffd558;
-  font: 800 15px var(--font-body);
-  letter-spacing: 0.12em;
-}
-.dl-signboard-2 + .dl-signtext { fill: #ffffff; }
-.dl-awning > path:first-child { fill: var(--dl-awning); }
-.dl-awning-stripe { fill: var(--primary); }
-.dl-awning-edge   { fill: var(--primary); }
-.dl-window { fill: var(--dl-window); stroke: var(--dl-line); stroke-width: 2; }
-.dl-shelf  { fill: var(--dl-shelf); }
-.dl-door   { fill: var(--dl-door); stroke: var(--dl-line); stroke-width: 2; }
-.dl-knob   { fill: var(--primary-dark); }
-
-/* person */
-.dl-shadow        { fill: var(--dl-shadow); }
-.dl-skin          { fill: #8d5a3b; }
-.dl-skin-dark     { fill: #74472d; }
-.dl-shirt         { fill: var(--primary); }
-.dl-shirt-dark    { fill: #d29d08; }
-.dl-trousers      { fill: #2f3542; }
-.dl-trousers-dark { fill: #232833; }
-.dl-shoe          { fill: #1c1c1c; }
-.dl-cap           { fill: #b8800a; }
-.dl-cap-dot       { fill: #8a6206; }
-
-/* the delivered pouch on shop 2's shelf and the "Delivered" bubble (driven by script.js) */
-.dl-delivered-pouch { opacity: 0; }
-.dl-bubble { opacity: 0; }
-.dl-bubble-inner rect,
-.dl-bubble-inner > path:first-of-type { fill: var(--dl-bubble); }
-.dl-bubble-inner { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12)); }
-.dl-bubble text {
-  fill: var(--dl-bubble-text);
-  font: 700 13px var(--font-body);
-}
-.dl-tick-bg { fill: var(--success); }
-.dl-tick {
+.dl-roads path {
   fill: none;
-  stroke: #ffffff;
-  stroke-width: 2.2;
+  stroke: var(--map-road);
+  stroke-width: 16;
+  stroke-linecap: round;
+}
+
+.dl-roads-main path {
+  fill: none;
+  stroke: var(--map-road);
+  stroke-width: 22;
+}
+
+.dl-street-names text {
+  fill: var(--map-label);
+  font: 700 8.5px var(--font-body);
+  letter-spacing: 0.18em;
+}
+
+/* route */
+.dl-route-planned,
+.dl-route-done {
+  fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.delivery-caption {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
+.dl-route-planned {
+  stroke: var(--map-route);
+  stroke-width: 5;
+  stroke-dasharray: 2 10;
 }
 
-.delivery-caption i { color: var(--primary); }
+.dl-route-done {
+  stroke: var(--primary);
+  stroke-width: 6;
+  filter: drop-shadow(0 2px 4px rgba(184, 128, 10, 0.35));
+}
+
+/* pins */
+.dl-pin-shadow { fill: rgba(0, 0, 0, 0.18); }
+.dl-pin-shop .dl-pin-body { fill: var(--map-pin-shop); }
+.dl-pin-home .dl-pin-body { fill: var(--map-pin-home); }
+.dl-pin-body { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.18)); }
+.dl-home-icon { fill: #2b2117; }
+
+.dl-label rect {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.08));
+}
+
+.dl-label text {
+  fill: var(--text);
+  font: 700 11.5px var(--font-body);
+}
+
+.dl-arrive-ring {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 3;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.dl-arrive-ring.is-on {
+  animation: dlRing 1.4s ease-out infinite;
+}
+
+/* courier marker */
+.dl-courier-ring {
+  fill: var(--surface);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
+}
+
+.dl-courier-bg { fill: var(--primary-soft); }
+
+.dl-pulse {
+  fill: var(--primary);
+  opacity: 0.25;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dlPulse 1.8s ease-out infinite;
+}
+
+@keyframes dlPulse {
+  0%   { transform: scale(0.85); opacity: 0.35; }
+  100% { transform: scale(1.7);  opacity: 0; }
+}
+
+@keyframes dlRing {
+  0%   { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* status card */
+.dl-card {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  padding: 14px 16px 12px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  box-shadow: 0 14px 34px rgba(40, 28, 6, 0.14);
+}
+
+[data-theme="dark"] .dl-card {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+.dl-card-top {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+/* (.about-photo img sizes the old photo; keep the thumbnail small) */
+.about-photo .dl-card-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+}
+
+.dl-card-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dl-card-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+}
+
+.dl-card-status {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.dl-card-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-card-eta,
+.dl-card-done {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.dl-card-eta {
+  display: grid;
+  justify-items: center;
+  min-width: 52px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--text);
+  line-height: 1;
+  transition: opacity 0.3s ease;
+}
+
+.dl-card-eta strong {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.dl-card-eta span {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dl-card-done {
+  justify-self: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--success);
+  color: #ffffff;
+  font-size: 17px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.delivery-animation.is-delivered .dl-card-done { opacity: 1; transform: scale(1); }
+.delivery-animation.is-delivered .dl-card-eta  { opacity: 0; }
+
+.dl-steps {
+  margin-top: 12px;
+}
+
+.dl-steps-track {
+  height: 5px;
+  border-radius: 99px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.dl-steps-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary));
+}
+
+.dl-steps ol {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+}
+
+.dl-steps li {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
+}
+
+.dl-steps li.is-active {
+  color: var(--text);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .dl-cloud-1,
-  .dl-cloud-2 {
+  .dl-pulse,
+  .dl-arrive-ring.is-on {
     animation: none;
   }
 }
 
 @media (max-width: 768px) {
   .delivery-animation {
-    height: 340px;
+    height: 360px;
     border-radius: 22px;
   }
 
-  .delivery-caption {
+  .dl-card {
+    left: 12px;
+    right: 12px;
     bottom: 12px;
-    padding: 7px 12px;
-    font-size: 11px;
+    padding: 11px 12px 10px;
+    border-radius: 16px;
   }
+
+  .dl-card-top {
+    grid-template-columns: 38px 1fr auto;
+    gap: 10px;
+  }
+
+  .about-photo .dl-card-thumb {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .dl-card-status { font-size: 14px; }
+  .dl-card-sub    { font-size: 11px; }
+  .dl-card-eta strong { font-size: 17px; }
+  .dl-steps { margin-top: 9px; }
+  .dl-steps li { font-size: 10px; }
 }
 
 /* ---------- MOBILE: CART BUTTON + BOTTOM NAV ---------- */
