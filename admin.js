@@ -27,7 +27,14 @@
   const fmtDateTime = iso => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const dayKey = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
   const deliveredAt = o => (o.history.find(h => h.status === 'delivered') || {}).at;
-  const itemsSummary = o => o.items.map(it => `${it.name}${it.type ? ` (${it.type})` : ''} × ${it.qty}`).join(', ');
+  // products that share a name (e.g. three "Refill Pack" sizes) get their price added so they can be told apart
+  const sharedNames = () => {
+    const count = {};
+    (productsData.length ? productsData : []).forEach(p => { count[p.name] = (count[p.name] || 0) + 1; });
+    return count;
+  };
+  const itemName = it => (sharedNames()[it.name] > 1 ? `${it.name} ${naira.format(it.price)}` : it.name);
+  const itemsSummary = o => o.items.map(it => `${itemName(it)}${it.type ? ` (${it.type})` : ''} × ${it.qty}`).join(', ');
 
   let orders = [], productsData = [];
   let range = 30;
@@ -304,7 +311,98 @@
       </tr>`).join('');
     $('ordersEmpty').hidden = list.length > 0;
     $('ordersMore').hidden = list.length <= shown;
+    updateCopyBar();
   }
+
+  /* ---------- copy a WhatsApp-ready summary (Payment to confirm, Confirmed, Out for delivery) ---------- */
+  const COPYABLE = {
+    pending: { title: 'Payments to confirm', noun: ['payment to confirm', 'payments to confirm'] },
+    confirmed: { title: 'Confirmed orders', noun: ['confirmed order', 'confirmed orders'] },
+    out: { title: 'Out for delivery', noun: ['order out for delivery', 'orders out for delivery'] }
+  };
+  const PAYMENT_LINE = { pending: '⏳ Awaiting confirmation', confirmed: '✅ Confirmed', out: '✅ Paid', delivered: '✅ Paid', cancelled: '❌ Cancelled' };
+
+  function updateCopyBar() {
+    const cfg = COPYABLE[statusFilter];
+    $('copyBar').hidden = !cfg;
+    if (!cfg) return;
+    const n = orders.filter(o => o.status === statusFilter).length;
+    $('copyBarText').textContent = n ? `${n} ${cfg.noun[n === 1 ? 0 : 1]}, ready to share` : `No ${cfg.noun[1]} right now`;
+    $('copyWhatsApp').disabled = !n;
+  }
+
+  const itemLines = o => o.items.map(it => `${it.qty} × ${itemName(it)}${it.type ? ` (${it.type})` : ''}`);
+  const placeLine = o => (o.location === 'Home Delivery' ? `Home Delivery — ${o.address || 'address not given'}` : o.location);
+  const stamp = () => new Date().toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  function whatsappText(status) {
+    const list = orders.filter(o => o.status === status).slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const value = list.reduce((s, o) => s + o.total, 0);
+    const head = [`*Divine Grace Chips — ${COPYABLE[status].title}* (${list.length})`, `_${stamp()}_`, ''];
+
+    if (status === 'out') {
+      // delivery summary: by location, packs to take, then each order
+      const byLoc = AdminData.LOCATIONS.map(l => [l, list.filter(o => o.location === l).length]).filter(([, n]) => n);
+      const packs = {};
+      list.forEach(o => o.items.forEach(it => {
+        const k = `${itemName(it)}${it.type ? ` (${it.type})` : ''}`;
+        packs[k] = (packs[k] || 0) + it.qty;
+      }));
+      return [
+        ...head,
+        '*By location*',
+        ...byLoc.map(([l, n]) => `• ${l}: ${n} order${n === 1 ? '' : 's'}`),
+        '',
+        '*Packs to take out*',
+        ...Object.entries(packs).sort((a, b) => b[1] - a[1]).map(([k, n]) => `• ${k} × ${n}`),
+        '',
+        '*Orders*',
+        ...list.map((o, i) => `${i + 1}. ${o.customer.name} (${o.customer.phone}) — ${placeLine(o)}\n    ${itemLines(o).join(', ')} · ${naira.format(o.total)} · ${PAYMENT_LINE[o.status]}`),
+        '',
+        `*Total value:* ${naira.format(value)}`
+      ].join('\n');
+    }
+
+    // payments to confirm / confirmed: everyone individually
+    return [
+      ...head,
+      ...list.map((o, i) => [
+        `${i + 1}. *${o.customer.name}* — ${o.customer.phone}`,
+        `    Order: ${itemLines(o).join(', ')}`,
+        `    Total: ${naira.format(o.total)} · Ref ${o.paymentRef}`,
+        `    Payment: ${PAYMENT_LINE[o.status]}`,
+        `    ${o.location === 'Home Delivery' ? 'Delivery' : 'Pickup'}: ${placeLine(o)}`,
+        ''
+      ].join('\n')),
+      `*Total:* ${naira.format(value)} from ${list.length} order${list.length === 1 ? '' : 's'}`
+    ].join('\n');
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      const t = document.createElement('textarea');
+      t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+      t.remove(); return ok;
+    }
+  }
+
+  $('copyWhatsApp').addEventListener('click', async () => {
+    if (!COPYABLE[statusFilter]) return;
+    const n = orders.filter(o => o.status === statusFilter).length;
+    const ok = await copyText(whatsappText(statusFilter));
+    const btn = $('copyWhatsApp');
+    if (ok) {
+      btn.classList.add('is-copied');
+      btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i><span>Copied</span>';
+      setTimeout(() => { btn.classList.remove('is-copied'); btn.innerHTML = '<i class="fa-regular fa-copy" aria-hidden="true"></i><span>Copy for WhatsApp</span>'; }, 1800);
+      toast(`Copied ${n} order${n === 1 ? '' : 's'}: paste it in WhatsApp`);
+    } else {
+      toast('Copy didn’t work in this browser. Try again.', 'bad');
+    }
+  });
 
   $('statusTabs').addEventListener('click', e => {
     const b = e.target.closest('[data-status]'); if (!b) return;
@@ -356,7 +454,7 @@
       <section class="d-section">
         <h3>Items</h3>
         <ul class="d-items">${o.items.map(it => `
-          <li><span>${it.qty} × ${esc(it.name)}${it.type ? ` <em>${esc(it.type)}</em>` : ''}</span><strong>${naira.format(it.price * it.qty)}</strong></li>`).join('')}
+          <li><span>${it.qty} × ${esc(itemName(it))}${it.type ? ` <em>${esc(it.type)}</em>` : ''}</span><strong>${naira.format(it.price * it.qty)}</strong></li>`).join('')}
         </ul>
         <div class="d-total"><span>Total</span><strong>${naira.format(o.total)}</strong></div>
       </section>

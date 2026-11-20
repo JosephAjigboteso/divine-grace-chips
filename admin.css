@@ -603,6 +603,51 @@
 
 .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent); }
 
+/* WhatsApp copy bar (Payment to confirm / Confirmed / Out for delivery) */
+.copy-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.copy-bar[hidden] { display: none; }
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  font: 700 13px var(--font-body);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.copy-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-soft); }
+.copy-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.copy-btn.is-copied,
+.copy-btn.is-copied:hover:not(:disabled) { background: var(--st-good); border-color: var(--st-good); color: #ffffff; }
+
+@media (max-width: 560px) {
+  .copy-bar { padding: 8px 8px 8px 12px; font-size: 12px; }
+  .copy-btn span { display: none; }          /* icon only on small phones */
+  .copy-btn { padding: 9px 12px; }
+  .copy-btn i { font-size: 15px; }
+}
+
 .table-card { padding: 4px 0 8px; overflow: hidden; }
 
 .orders-table { width: 100%; border-collapse: collapse; font-size: 13px; }
