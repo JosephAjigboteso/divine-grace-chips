@@ -47,51 +47,41 @@
   <main class="order-main">
     <div class="container order-grid">
       <!-- ===== ORDER SUMMARY ===== -->
-      <aside class="order-summary">
+      <aside class="order-summary" id="orderSummary">
         <span class="eyebrow">YOUR ORDER</span>
         <h1>Almost there!</h1>
-        <p>Choose a product, set your quantity and tell us where to reach you.</p>
+        <p>Pick your products, set the quantity and tell us where to reach you.</p>
 
-        <div class="primary-product-item">
-          <div class="selected-product">
-            <img id="miniArt" src="" alt="Selected product">
-            <div>
-              <strong id="selectedName">Click a product to order</strong>
-              <span id="selectedPrice"></span>
-            </div>
-          </div>
-          <div class="quantity-box">
-            <span>Quantity</span>
-            <div class="quantity-control">
-              <button type="button" id="minus" aria-label="Decrease quantity">−</button>
-              <strong id="qty">1</strong>
-              <button type="button" id="plus" aria-label="Increase quantity">+</button>
-            </div>
-          </div>
-          <div class="product-type">
-            <label for="productType">Type</label>
-            <select id="productType">
-              <option value="Ripe">Ripe</option>
-              <option value="Unripe">Unripe</option>
-            </select>
-          </div>
+        <!-- shown while no product has been chosen -->
+        <div class="order-empty" id="orderEmpty">
+          <span class="order-empty-icon" aria-hidden="true"><i class="fa-solid fa-basket-shopping"></i></span>
+          <strong>No product selected yet</strong>
+          <span>Choose from our plantain and potato chips to start your order.</span>
+          <button class="btn btn-primary" id="chooseProductBtn" type="button" aria-controls="productPicker" aria-expanded="false">
+            <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> Click a product to order
+          </button>
         </div>
 
-        <div class="added-products" id="addedProducts" aria-live="polite"></div>
+        <!-- the products in this order (filled in by script.js) -->
+        <ul class="order-items" id="orderItems" aria-live="polite"></ul>
 
-        <div class="add-product-picker" id="addProductPicker" hidden>
-          <select id="additionalProduct" aria-hidden="true" tabindex="-1"></select>
+        <!-- product picker -->
+        <div class="product-picker" id="productPicker" hidden>
+          <div class="product-picker-head">
+            <strong>Choose a product</strong>
+            <button type="button" class="product-picker-close" id="closePickerBtn" aria-label="Close product list"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+          </div>
           <div class="product-options" id="productOptions"></div>
         </div>
 
-        <div class="total-row">
-          <span>Total</span>
-          <strong id="total">₦0</strong>
-        </div>
-
-        <button class="btn btn-light add-product-btn" id="addProductBtn" type="button">
+        <button class="btn btn-light add-product-btn" id="addProductBtn" type="button" aria-controls="productPicker" aria-expanded="false" hidden>
           <i class="fa-solid fa-plus" aria-hidden="true"></i> Add more products
         </button>
+
+        <div class="total-row" id="totalRow" hidden>
+          <span>Total <small id="itemCount"></small></span>
+          <strong id="total">₦0</strong>
+        </div>
       </aside>
 
       <!-- ===== ORDER FORM ===== -->
@@ -108,15 +98,10 @@
           <input type="hidden" name="from_name" value="Divine Grace Chips Website">
           <input type="checkbox" name="botcheck" style="display:none">
 
-          <input type="hidden" name="product" id="productField">
-          <input type="hidden" name="quantity" id="quantityField">
-          <input type="hidden" name="type" id="typeField">
+          <!-- filled in from the order at the top when the form is sent -->
+          <input type="hidden" name="order" id="orderField">
+          <input type="hidden" name="items" id="itemsField">
           <input type="hidden" name="total" id="totalField">
-
-          <div class="field">
-            <label for="productSelect">Product <span>*</span></label>
-            <select id="productSelect" name="product_choice"></select>
-          </div>
 
           <div class="field">
             <label for="name">Full Name <span>*</span></label>

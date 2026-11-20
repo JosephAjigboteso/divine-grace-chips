@@ -158,160 +158,6 @@ function setupNavActiveOnClick() {
   });
 }
 
-/* ---------- ORDER TYPE ---------- */
-function setupOrderType() {
-  const typeSelect = document.getElementById('productType');
-  const typeField = document.getElementById('typeField');
-  if (!typeSelect || !typeField) return;
-  const syncType = () => {
-    typeField.value = typeSelect.value;
-  };
-  typeSelect.addEventListener('change', syncType);
-  syncType();
-}
-
-/* ---------- PRODUCT OPTIONS ---------- */
-function setupProductOptions() {
-  const options = document.getElementById('productOptions');
-  const picker = document.getElementById('additionalProduct');
-  const panel = document.getElementById('addProductPicker');
-  if (!options || !picker || !panel) return;
-  products.forEach(product => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'product-option';
-    button.innerHTML = `<img src="${product.image}" alt=""><span>${product.name}<small>${money.format(product.price)}</small></span>`;
-    button.addEventListener('click', () => {
-      picker.value = product.id;
-      picker.dispatchEvent(new Event('change', { bubbles: true }));
-      panel.hidden = true;
-    });
-    options.appendChild(button);
-  });
-}
-
-/* ---------- ORDER ITEM SIZING ---------- */
-function setupOrderItemSizing() {
-  const list = document.getElementById('addedProducts');
-  const summary = list?.closest('.order-summary');
-  if (!list || !summary) return;
-  const update = () => {
-    const count = list.querySelectorAll('.added-product').length;
-    summary.classList.toggle('has-additions', count > 0);
-    summary.classList.toggle('many-additions', count > 1);
-  };
-  new MutationObserver(update).observe(list, { childList: true });
-  update();
-}
-
-/* ---------- ADDITIONAL PRODUCTS ---------- */
-function setupAdditionalProducts() {
-  const picker = document.getElementById('additionalProduct');
-  const pickerPanel = document.getElementById('addProductPicker');
-  const addButton = document.getElementById('addProductBtn');
-  const addedList = document.getElementById('addedProducts');
-  const productSelect = document.getElementById('productSelect');
-  const typeSelect = document.getElementById('productType');
-  const total = document.getElementById('total');
-  const productField = document.getElementById('productField');
-  const quantityField = document.getElementById('quantityField');
-  const typeField = document.getElementById('typeField');
-  const qty = document.getElementById('qty');
-  if (!picker || !pickerPanel || !addButton || !addedList || !productSelect || !typeSelect) return;
-
-  const additions = [];
-  products.forEach(product => {
-    const option = document.createElement('option');
-    option.value = product.id;
-    option.textContent = `${product.name} — ${money.format(product.price)}`;
-    picker.appendChild(option);
-  });
-
-  const syncOrder = () => {
-    const primary = getProduct(productSelect.value);
-    const primaryQuantity = Number(qty?.textContent) || 1;
-    const primaryType = typeSelect.value;
-    const items = [{ product: primary, quantity: primaryQuantity, type: primaryType }, ...additions];
-    const combinedTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    if (total) total.textContent = money.format(combinedTotal);
-    if (productField) productField.value = items.map(item => `${item.product.name} (${item.type})`).join(', ');
-    if (quantityField) quantityField.value = items.map(item => item.quantity).join(', ');
-    if (typeField) typeField.value = items.map(item => item.type).join(', ');
-    addedList.innerHTML = additions.map((item, index) => `
-      <div class="added-product">
-        <div class="added-product-header">
-          <div class="selected-product">
-            <img src="${item.product.image}" alt="${item.product.name}">
-            <div>
-              <strong>${item.product.name}</strong>
-              <span>${money.format(item.product.price)}</span>
-            </div>
-          </div>
-          <button type="button" class="remove-added-product" data-index="${index}" aria-label="Remove ${item.product.name}">
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
-        </div>
-        <div class="quantity-box">
-          <span>Quantity</span>
-          <div class="quantity-control">
-            <button type="button" class="added-minus" data-index="${index}">−</button>
-            <strong>${item.quantity}</strong>
-            <button type="button" class="added-plus" data-index="${index}">+</button>
-          </div>
-        </div>
-        <div class="product-type">
-          <label>Type</label>
-          <select class="added-type" data-index="${index}">
-            <option value="Ripe"${item.type === 'Ripe' ? ' selected' : ''}>Ripe</option>
-            <option value="Unripe"${item.type === 'Unripe' ? ' selected' : ''}>Unripe</option>
-          </select>
-        </div>
-      </div>
-    `).join('');
-  };
-
-  addButton.addEventListener('click', () => {
-    pickerPanel.hidden = !pickerPanel.hidden;
-    if (!pickerPanel.hidden) picker.focus();
-  });
-
-  picker.addEventListener('change', () => {
-    if (!picker.value) return;
-    additions.push({ product: getProduct(picker.value), quantity: 1, type: typeSelect.value });
-    picker.value = '';
-    syncOrder();
-  });
-
-  typeSelect.addEventListener('change', syncOrder);
-  productSelect.addEventListener('change', syncOrder);
-
-  addedList.addEventListener('click', event => {
-    const button = event.target.closest('button[data-index]');
-    if (!button) return;
-    const index = Number(button.dataset.index);
-    const item = additions[index];
-    if (!item) return;
-    if (button.classList.contains('remove-added-product')) {
-      additions.splice(index, 1);
-      syncOrder();
-      return;
-    }
-    if (button.classList.contains('added-minus')) item.quantity = Math.max(1, item.quantity - 1);
-    if (button.classList.contains('added-plus')) item.quantity = Math.min(50, item.quantity + 1);
-    syncOrder();
-  });
-
-  addedList.addEventListener('change', event => {
-    if (!event.target.classList.contains('added-type')) return;
-    additions[Number(event.target.dataset.index)].type = event.target.value;
-    syncOrder();
-  });
-
-  const observer = qty ? new MutationObserver(syncOrder) : null;
-  if (observer) observer.observe(qty, { childList: true });
-  syncOrder();
-}
-
 /* ---------- PRODUCT DATA ----------
    PHOTOS — each product has its own folder:  asset/products/<id>/
      • photos: file names inside that folder, in slider order.
@@ -355,7 +201,6 @@ products.forEach((p, i) => {
 });
 
 const money = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
-const getProduct = id => products.find(p => p.id === id) || products[0];
 
 /* ---------- PRODUCT CARD TEMPLATE ---------- */
 const card = p => `
@@ -390,77 +235,163 @@ function renderProducts() {
 /* ---------- ORDER PAGE ---------- */
 function setupOrderPage() {
   const form = document.getElementById('orderForm');
-  if (!form) return;
+  const itemsEl = document.getElementById('orderItems');
+  if (!form || !itemsEl) return;
 
-  const select = document.getElementById('productSelect');
-  select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} — ${money.format(p.price)}</option>`).join('');
+  const $ = id => document.getElementById(id);
+  const summary = $('orderSummary');
+  const empty = $('orderEmpty');
+  const picker = $('productPicker');
+  const options = $('productOptions');
+  const chooseBtn = $('chooseProductBtn');
+  const addBtn = $('addProductBtn');
+  const closePickerBtn = $('closePickerBtn');
+  const totalRow = $('totalRow');
+  const totalEl = $('total');
+  const countEl = $('itemCount');
+  const message = $('formMessage');
+  const submit = $('submitBtn');
+  const MAX_QTY = 50;
 
-  const params = new URLSearchParams(location.search);
-  let product = getProduct(params.get('product'));
-  select.value = product.id;
+  /* The order: one line per product → { id, qty, type } */
+  let cart = [];
+  const find = id => products.find(p => p.id === id);
+  const hasType = product => !/potato/i.test(product.name);   // plantain products come ripe or unripe
+  const lineTotal = line => find(line.id).price * line.qty;
+  const orderTotal = () => cart.reduce((sum, line) => sum + lineTotal(line), 0);
 
-  let quantity = 1;
-  const els = {
-    name: document.getElementById('selectedName'),
-    price: document.getElementById('selectedPrice'),
-    qty: document.getElementById('qty'),
-    total: document.getElementById('total'),
-    product: document.getElementById('productField'),
-    quantity: document.getElementById('quantityField'),
-    totalField: document.getElementById('totalField'),
-    mini: document.getElementById('miniArt'),
-    message: document.getElementById('formMessage'),
-    submit: document.getElementById('submitBtn')
+  // A product chosen on the products page (order.html?product=big-jar) starts the order
+  const start = find(new URLSearchParams(location.search).get('product'));
+  if (start) cart.push({ id: start.id, qty: 1, type: 'Ripe' });
+
+  /* product picker */
+  options.innerHTML = products.map(p => `
+    <button type="button" class="product-option" data-id="${p.id}">
+      <img src="${p.image}" alt="">
+      <span>${p.name}<small>${money.format(p.price)}</small></span>
+      <i class="fa-solid fa-circle-check product-option-check" aria-hidden="true"></i>
+    </button>`).join('');
+
+  const setPicker = open => {
+    picker.hidden = !open;
+    [chooseBtn, addBtn].forEach(b => b.setAttribute('aria-expanded', String(open)));
+    render();
+    if (open) picker.querySelector('.product-option').focus({ preventScroll: true });
   };
 
-  function update() {
-    const total = product.price * quantity;
-    els.name.textContent = product.name;
-    els.price.textContent = money.format(product.price);
-    els.qty.textContent = quantity;
-    els.total.textContent = money.format(total);
-    els.product.value = product.name;
-    els.quantity.value = quantity;
-    els.totalField.value = money.format(total);
-    els.mini.src = product.image;
-    els.mini.alt = product.name;
-    select.value = product.id;
+  options.addEventListener('click', e => {
+    const btn = e.target.closest('.product-option');
+    if (!btn) return;
+    const line = cart.find(l => l.id === btn.dataset.id);
+    if (line) line.qty = Math.min(MAX_QTY, line.qty + 1);   // already in the order: one more
+    else cart.push({ id: btn.dataset.id, qty: 1, type: 'Ripe' });
+    clearMessage();
+    setPicker(false);
+  });
+
+  chooseBtn.addEventListener('click', () => setPicker(true));
+  addBtn.addEventListener('click', () => setPicker(picker.hidden));
+  closePickerBtn.addEventListener('click', () => setPicker(false));
+
+  /* order lines */
+  itemsEl.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const i = Number(btn.closest('[data-index]').dataset.index);
+    const line = cart[i];
+    if (!line) return;
+    if (btn.dataset.action === 'remove') cart.splice(i, 1);
+    if (btn.dataset.action === 'minus') line.qty = Math.max(1, line.qty - 1);
+    if (btn.dataset.action === 'plus') line.qty = Math.min(MAX_QTY, line.qty + 1);
+    render();
+  });
+
+  itemsEl.addEventListener('change', e => {
+    if (!e.target.matches('select[data-action="type"]')) return;
+    cart[Number(e.target.closest('[data-index]').dataset.index)].type = e.target.value;
+    render();
+  });
+
+  function render() {
+    const hasItems = cart.length > 0;
+    const pickerOpen = !picker.hidden;
+
+    empty.hidden = hasItems || pickerOpen;
+    addBtn.hidden = !hasItems || pickerOpen;
+    totalRow.hidden = !hasItems;
+    summary.classList.toggle('has-items', hasItems);
+
+    itemsEl.innerHTML = cart.map((line, i) => {
+      const p = find(line.id);
+      return `
+        <li class="order-item" data-index="${i}">
+          <img class="order-item-img" src="${p.image}" alt="">
+          <div class="order-item-info">
+            <strong>${p.name}</strong>
+            <span>${money.format(p.price)} each</span>
+          </div>
+          <button type="button" class="order-item-remove" data-action="remove" aria-label="Remove ${p.name}">
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+          </button>
+          <div class="order-item-controls">
+            <div class="quantity-control" role="group" aria-label="Quantity of ${p.name}">
+              <button type="button" data-action="minus" aria-label="Decrease quantity"${line.qty <= 1 ? ' disabled' : ''}>−</button>
+              <strong>${line.qty}</strong>
+              <button type="button" data-action="plus" aria-label="Increase quantity"${line.qty >= MAX_QTY ? ' disabled' : ''}>+</button>
+            </div>
+            ${hasType(p) ? `
+            <select class="order-item-type" data-action="type" aria-label="Plantain type for ${p.name}">
+              <option value="Ripe"${line.type === 'Ripe' ? ' selected' : ''}>Ripe</option>
+              <option value="Unripe"${line.type === 'Unripe' ? ' selected' : ''}>Unripe</option>
+            </select>` : '<span></span>'}
+            <span class="order-item-total">${money.format(lineTotal(line))}</span>
+          </div>
+        </li>`;
+    }).join('');
+
+    // mark products already in the order inside the picker
+    options.querySelectorAll('.product-option').forEach(b => {
+      b.classList.toggle('is-in-order', cart.some(l => l.id === b.dataset.id));
+    });
+
+    const count = cart.reduce((n, l) => n + l.qty, 0);
+    totalEl.textContent = money.format(orderTotal());
+    countEl.textContent = hasItems ? `· ${count} item${count === 1 ? '' : 's'}` : '';
   }
 
-  select.addEventListener('change', () => {
-    product = getProduct(select.value);
-    quantity = 1;
-    update();
-  });
+  /* hidden fields sent with the form */
+  const fillHiddenFields = () => {
+    $('orderField').value = cart.map(line => {
+      const p = find(line.id);
+      return `${line.qty} × ${p.name}${hasType(p) ? ` (${line.type})` : ''} = ${money.format(lineTotal(line))}`;
+    }).join('\n');
+    $('itemsField').value = String(cart.reduce((n, l) => n + l.qty, 0));
+    $('totalField').value = money.format(orderTotal());
+  };
 
-  document.getElementById('minus').addEventListener('click', () => {
-    if (quantity > 1) {
-      quantity--;
-      update();
-    }
-  });
-
-  document.getElementById('plus').addEventListener('click', () => {
-    if (quantity < 50) {
-      quantity++;
-      update();
-    }
-  });
+  const clearMessage = () => { message.className = 'form-message'; message.textContent = ''; };
+  const showError = text => { message.className = 'form-message error'; message.textContent = text; };
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
-    els.message.className = 'form-message';
-    els.message.textContent = '';
+    clearMessage();
 
-    const key = form.querySelector('[name="access_key"]').value.trim();
-    if (!key || key === 'YOUR_WEB3FORMS_ACCESS_KEY') {
-      els.message.className = 'form-message error';
-      els.message.textContent = 'Add your Web3Forms access key in order.html before testing submissions.';
+    if (!cart.length) {
+      showError('Please choose at least one product at the top of the page before submitting.');
+      summary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      summary.classList.remove('needs-product'); void summary.offsetWidth; summary.classList.add('needs-product');
       return;
     }
 
-    els.submit.disabled = true;
-    els.submit.innerHTML = 'Sending order…';
+    const key = form.querySelector('[name="access_key"]').value.trim();
+    if (!key || key === 'YOUR_WEB3FORMS_ACCESS_KEY') {
+      showError('Add your Web3Forms access key in order.html before testing submissions.');
+      return;
+    }
+
+    fillHiddenFields();
+    submit.disabled = true;
+    submit.innerHTML = 'Sending order…';
 
     try {
       const response = await fetch('https://api.web3forms.com/submit', {
@@ -469,26 +400,22 @@ function setupOrderPage() {
         body: JSON.stringify(Object.fromEntries(new FormData(form).entries()))
       });
       const result = await response.json();
-      if (response.ok && result.success) {
-        els.message.className = 'form-message success';
-        els.message.textContent = 'Order received successfully! We will contact you shortly.';
-        form.reset();
-        quantity = 1;
-        product = products[0];
-        update();
-      } else {
-        throw new Error(result.message || 'Unable to submit order.');
-      }
+      if (!(response.ok && result.success)) throw new Error(result.message || 'Unable to submit order.');
+      message.className = 'form-message success';
+      message.textContent = 'Order received successfully! We will contact you shortly to confirm.';
+      form.reset();
+      cart = [];
+      history.replaceState(null, '', location.pathname);   // drop ?product= from the address
+      render();
     } catch (err) {
-      els.message.className = 'form-message error';
-      els.message.textContent = 'We could not send the order. Please check your connection and try again.';
+      showError('We could not send the order. Please check your connection and try again.');
     } finally {
-      els.submit.disabled = false;
-      els.submit.innerHTML = 'Submit Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
+      submit.disabled = false;
+      submit.innerHTML = 'Submit Order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
     }
   });
 
-  update();
+  render();
 }
 
 /* ---------- CAROUSEL (kept for compatibility — no-ops when no carousel exists) ---------- */
@@ -1061,85 +988,4 @@ document.addEventListener('DOMContentLoaded', () => {
   setupProductImageViewer();
   setupNavActiveOnClick();
   document.querySelectorAll('#year').forEach(el => el.textContent = new Date().getFullYear());
-});
-
-document.addEventListener('DOMContentLoaded', setupOrderType);
-document.addEventListener('DOMContentLoaded', setupProductOptions);
-document.addEventListener('DOMContentLoaded', setupAdditionalProducts);
-document.addEventListener('DOMContentLoaded', setupOrderItemSizing);
-
-/* ---------- EMPTY STATE FOR ORDER PAGE (no product in URL) ---------- */
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('orderForm');
-  const select = document.getElementById('productSelect');
-  if (!form || !select || new URLSearchParams(location.search).has('product')) return;
-
-  const name = document.getElementById('selectedName');
-  const price = document.getElementById('selectedPrice');
-  const mini = document.getElementById('miniArt');
-  const total = document.getElementById('total');
-  const productField = document.getElementById('productField');
-  const quantityField = document.getElementById('quantityField');
-  const totalField = document.getElementById('totalField');
-  const typeField = document.getElementById('typeField');
-  const message = document.getElementById('formMessage');
-  const controls = [
-    document.getElementById('minus'),
-    document.getElementById('plus'),
-    document.getElementById('productType'),
-    document.getElementById('addProductBtn')
-  ];
-
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Select a product';
-  placeholder.selected = true;
-  select.insertBefore(placeholder, select.firstChild);
-  select.required = false;
-
-  const resetEmptyState = () => {
-    if (select.value) return;
-    name.textContent = 'Click a product to order';
-    price.textContent = '';
-    mini.removeAttribute('src');
-    mini.alt = 'No product selected';
-    total.textContent = '₦0';
-    productField.value = '';
-    quantityField.value = '';
-    totalField.value = '';
-    typeField.value = '';
-    controls.forEach(control => { if (control) control.disabled = true; });
-  };
-
-  const enableSelectedState = () => controls.forEach(control => {
-    if (control) control.disabled = false;
-  });
-
-  select.addEventListener('change', () => {
-    if (select.value) {
-      select.required = true;
-      enableSelectedState();
-    } else {
-      select.required = false;
-      resetEmptyState();
-    }
-  }, true);
-
-  resetEmptyState();
-
-  document.getElementById('submitBtn').addEventListener('click', event => {
-    if (select.value) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    message.className = 'form-message error';
-    message.textContent = 'Click a product to order before submitting.';
-  }, true);
-
-  form.addEventListener('submit', event => {
-    if (select.value) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    message.className = 'form-message error';
-    message.textContent = 'Click a product to order before submitting.';
-  }, true);
 });
