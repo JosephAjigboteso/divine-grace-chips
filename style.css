@@ -3381,3 +3381,18 @@ h1, h2, h3 {
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+
+/* ---------- DARK THEME: white backgrounds behind product photos ----------
+   The packs are photographed for a light background, so in dark mode every
+   product photo sits on white to stay bright and true to colour. */
+[data-theme="dark"] .product-image,
+[data-theme="dark"] .collage-section .collage-item,
+[data-theme="dark"] .selected-product img,
+[data-theme="dark"] .product-option img,
+[data-theme="dark"] .added-product img {
+  background: #ffffff;
+}
+
+[data-theme="dark"] .collage-section .collage-item {
+  border-color: rgba(255, 255, 255, 0.12);
+}
