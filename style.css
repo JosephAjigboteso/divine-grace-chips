@@ -2504,509 +2504,171 @@ footer {
   }
 }
 
-/* ---------- ABOUT DELIVERY ANIMATION ---------- */
+/* ---------- ABOUT DELIVERY ANIMATION ----------
+   An inline SVG scene; script.js (setupDelivery) moves the person.
+   Colours come from the variables below so it follows light / dark mode. */
 .delivery-animation {
+  --dl-sky-top: #fff6d4;
+  --dl-sky-bottom: var(--surface);
+  --dl-sun: #ffe9a3;
+  --dl-cloud: #ffffff;
+  --dl-ground: #f1e9d8;
+  --dl-kerb: #e2d6bd;
+  --dl-tiles: #e6dcc6;
+  --dl-wall: #ffffff;
+  --dl-line: #e3d7bf;
+  --dl-window: #e9f4f6;
+  --dl-shelf: #d9c9a6;
+  --dl-door: #f6eedb;
+  --dl-sign: #2b2117;
+  --dl-sign-2: #2f7a50;
+  --dl-awning: #ffffff;
+  --dl-shadow: rgba(60, 42, 8, 0.16);
+  --dl-bubble: #ffffff;
+  --dl-bubble-text: #201b13;
+
   position: relative;
   height: 480px;
   overflow: hidden;
   isolation: isolate;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(230, 184, 0, .14), transparent 34%),
-    linear-gradient(180deg, var(--glow) 0%, var(--background) 72%);
+  background: var(--dl-sky-bottom);
 }
 
-.delivery-scene {
-  position: relative;
+[data-theme="dark"] .delivery-animation {
+  --dl-sky-top: #2a2310;
+  --dl-sky-bottom: var(--surface);
+  --dl-sun: #4a3a0c;
+  --dl-cloud: #3a3428;
+  --dl-ground: #26231d;
+  --dl-kerb: #332e25;
+  --dl-tiles: #2e2a22;
+  --dl-wall: #2b2822;
+  --dl-line: #3d372d;
+  --dl-window: #1f2a2e;
+  --dl-shelf: #4a4336;
+  --dl-door: #352f25;
+  --dl-sign: #0f0d0a;
+  --dl-sign-2: #23573a;
+  --dl-awning: #3a3428;
+  --dl-shadow: rgba(0, 0, 0, 0.45);
+  --dl-bubble: #f7f2e8;
+  --dl-bubble-text: #201b13;
+}
+
+.delivery-svg {
+  display: block;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;   /* sky and pavement extend past the drawing to fill any card shape */
 }
 
-.scene-sky-glow {
-  position: absolute;
-  width: 210px;
-  height: 210px;
-  top: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(230,184,0,.16), transparent 68%);
-  filter: blur(2px);
-  pointer-events: none;
+.dl-sky-top    { stop-color: var(--dl-sky-top); }
+.dl-sky-bottom { stop-color: var(--dl-sky-bottom); }
+.dl-sun        { fill: var(--dl-sun); }
+.dl-cloud      { fill: var(--dl-cloud); opacity: 0.9; }
+.dl-ground     { fill: var(--dl-ground); }
+.dl-kerb       { fill: var(--dl-kerb); }
+.dl-tiles      { fill: var(--dl-tiles); }
+
+.dl-cloud-1 { animation: dlCloud 38s linear infinite; }
+.dl-cloud-2 { animation: dlCloud 52s linear infinite; animation-delay: -26s; }
+.dl-cloud-1 > * { transform: translate(0, 58px); }
+.dl-cloud-2 > * { transform: translate(0, 92px); }
+
+@keyframes dlCloud {
+  from { transform: translateX(-80px); }
+  to   { transform: translateX(680px); }
 }
 
-.delivery-shop {
-  position: absolute;
-  bottom: 91px;
-  width: 116px;
-  height: 155px;
-  z-index: 3;
-  filter: drop-shadow(0 12px 18px rgba(0,0,0,.10));
+.dl-wall       { fill: var(--dl-wall); stroke: var(--dl-line); stroke-width: 2; }
+.dl-signboard  { fill: var(--dl-sign); }
+.dl-signboard-2 { fill: var(--dl-sign-2); }
+.dl-signtext {
+  fill: #ffd558;
+  font: 800 15px var(--font-body);
+  letter-spacing: 0.12em;
 }
+.dl-signboard-2 + .dl-signtext { fill: #ffffff; }
+.dl-awning > path:first-child { fill: var(--dl-awning); }
+.dl-awning-stripe { fill: var(--primary); }
+.dl-awning-edge   { fill: var(--primary); }
+.dl-window { fill: var(--dl-window); stroke: var(--dl-line); stroke-width: 2; }
+.dl-shelf  { fill: var(--dl-shelf); }
+.dl-door   { fill: var(--dl-door); stroke: var(--dl-line); stroke-width: 2; }
+.dl-knob   { fill: var(--primary-dark); }
 
-.shop-one { left: 7%; }
-.shop-two { right: 7%; }
+/* person */
+.dl-shadow        { fill: var(--dl-shadow); }
+.dl-skin          { fill: #8d5a3b; }
+.dl-skin-dark     { fill: #74472d; }
+.dl-shirt         { fill: var(--primary); }
+.dl-shirt-dark    { fill: #d29d08; }
+.dl-trousers      { fill: #2f3542; }
+.dl-trousers-dark { fill: #232833; }
+.dl-shoe          { fill: #1c1c1c; }
+.dl-cap           { fill: #b8800a; }
+.dl-cap-dot       { fill: #8a6206; }
 
-.shop-sign {
-  position: absolute;
-  top: 0;
-  left: 6px;
-  right: 6px;
-  height: 43px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: .9;
-  border-radius: 9px 9px 3px 3px;
-  background: var(--primary);
-  color: #fffaf0;
-  box-shadow: 0 5px 12px rgba(0,0,0,.12);
+/* the delivered pouch on shop 2's shelf and the "Delivered" bubble (driven by script.js) */
+.dl-delivered-pouch { opacity: 0; }
+.dl-bubble { opacity: 0; }
+.dl-bubble-inner rect,
+.dl-bubble-inner > path:first-of-type { fill: var(--dl-bubble); }
+.dl-bubble-inner { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12)); }
+.dl-bubble text {
+  fill: var(--dl-bubble-text);
+  font: 700 13px var(--font-body);
 }
-
-.shop-sign span {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: .13em;
+.dl-tick-bg { fill: var(--success); }
+.dl-tick {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-
-.shop-sign strong {
-  font-size: 12px;
-  letter-spacing: .04em;
-}
-
-.shop-awning {
-  position: absolute;
-  top: 43px;
-  left: 0;
-  width: 100%;
-  height: 16px;
-  background: repeating-linear-gradient(90deg, var(--primary) 0 15px, var(--primary-light) 15px 30px);
-  border-radius: 3px 3px 8px 8px;
-}
-
-.shop-front {
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  bottom: 0;
-  height: 98px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  padding: 12px 10px 0;
-  border: 2px solid rgba(230,184,0,.22);
-  border-top: 0;
-  border-radius: 0 0 10px 10px;
-  background: var(--surface);
-}
-
-.shop-window {
-  width: 48px;
-  height: 57px;
-  display: grid;
-  place-items: center;
-  border: 3px solid var(--primary-soft);
-  border-radius: 5px 5px 2px 2px;
-  background: linear-gradient(135deg, rgba(230,184,0,.17), rgba(255,255,255,.18));
-}
-
-.window-bag {
-  display: grid;
-  place-items: center;
-  width: 25px;
-  height: 31px;
-  border-radius: 4px 4px 7px 7px;
-  background: var(--primary);
-  color: #fffaf0;
-  font: 800 9px/1 var(--font-body);
-  box-shadow: 0 4px 8px rgba(0,0,0,.12);
-}
-
-.shop-door {
-  width: 30px;
-  height: 67px;
-  border-radius: 5px 5px 2px 2px;
-  background: linear-gradient(90deg, var(--primary-soft), rgba(230,184,0,.18));
-  border: 2px solid rgba(230,184,0,.22);
-}
-
-.delivery-road {
-  position: absolute;
-  left: 5%;
-  right: 5%;
-  bottom: 73px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(0,0,0,.07);
-  transform: perspective(180px) rotateX(55deg);
-  z-index: 1;
-}
-
-.delivery-road::after {
-  content: '';
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 50%;
-  height: 3px;
-  border-radius: 20px;
-  background: repeating-linear-gradient(90deg, rgba(230,184,0,.38) 0 26px, transparent 26px 52px);
-  transform: translateY(-50%);
-}
-
-.delivery-person {
-  position: absolute;
-  left: 18%;
-  bottom: 92px;
-  width: 58px;
-  height: 151px;
-  z-index: 5;
-  transform-origin: 50% 100%;
-  animation: deliveryJourney 7s cubic-bezier(.45,.05,.55,.95) infinite;
-}
-
-.person-shadow {
-  position: absolute;
-  width: 76px;
-  height: 13px;
-  left: -9px;
-  bottom: -5px;
-  border-radius: 50%;
-  background: rgba(0,0,0,.13);
-  animation: shadowWalk .55s ease-in-out infinite alternate;
-}
-
-.person-head {
-  position: absolute;
-  width: 29px;
-  height: 29px;
-  top: 0;
-  left: 15px;
-  border-radius: 50%;
-  background: #b96f49;
-  border: 2px solid rgba(0,0,0,.08);
-  z-index: 3;
-}
-
-.person-hair {
-  position: absolute;
-  width: 28px;
-  height: 13px;
-  top: -2px;
-  left: -1px;
-  border-radius: 16px 16px 5px 5px;
-  background: #2d241f;
-}
-
-.person-neck {
-  position: absolute;
-  width: 10px;
-  height: 9px;
-  top: 26px;
-  left: 25px;
-  background: #a86042;
-  z-index: 2;
-}
-
-.person-body {
-  position: absolute;
-  top: 32px;
-  left: 10px;
-  width: 39px;
-  height: 57px;
-  border-radius: 13px 13px 8px 8px;
-  background: var(--primary);
-  box-shadow: inset -5px 0 rgba(0,0,0,.07);
-}
-
-.delivery-logo {
-  position: absolute;
-  top: 15px;
-  left: 8px;
-  display: grid;
-  place-items: center;
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  background: #fff8df;
-  color: var(--primary-dark, #9a7900);
-  font: 900 8px/1 var(--font-body);
-}
-
-.person-arm {
-  position: absolute;
-  top: 39px;
-  width: 10px;
-  height: 49px;
-  border-radius: 9px;
-  background: #b96f49;
-  transform-origin: 50% 8px;
-  z-index: 1;
-}
-
-.arm-back {
-  left: 5px;
-  transform: rotate(24deg);
-  animation: armBack .55s ease-in-out infinite alternate;
-}
-
-.arm-front {
-  right: 0;
-  transform: rotate(-38deg);
-  animation: armFront .55s ease-in-out infinite alternate;
-}
-
-.chip-package {
-  position: absolute;
-  top: 21px;
-  left: 1px;
-  width: 38px;
-  height: 47px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px 5px 9px 9px;
-  background: linear-gradient(145deg, #f4c928, var(--primary));
-  color: #fffdf5;
-  text-align: center;
-  font: 700 6px/1.15 var(--font-body);
-  letter-spacing: .04em;
-  box-shadow: 0 5px 10px rgba(0,0,0,.16);
-}
-
-.chip-package::before {
-  content: '✦';
-  display: block;
-  margin-bottom: 2px;
-  font-size: 9px;
-}
-
-.chip-package b {
-  font-size: 7px;
-}
-
-.person-leg {
-  position: absolute;
-  top: 83px;
-  width: 11px;
-  height: 51px;
-  border-radius: 9px;
-  background: #2f2b29;
-  transform-origin: 50% 5px;
-}
-
-.leg-left {
-  left: 14px;
-  animation: legLeft .55s ease-in-out infinite alternate;
-}
-
-.leg-right {
-  right: 14px;
-  animation: legRight .55s ease-in-out infinite alternate;
-}
-
-.person-shoe {
-  position: absolute;
-  top: 128px;
-  width: 22px;
-  height: 9px;
-  border-radius: 8px 8px 4px 4px;
-  background: #211f1e;
-}
-
-.shoe-left { left: 5px; }
-.shoe-right { right: 5px; }
-
-.delivery-spark {
-  position: absolute;
-  z-index: 4;
-  color: var(--primary);
-  opacity: .55;
-  animation: sparkFloat 2.4s ease-in-out infinite;
-}
-
-.spark-one { left: 34%; top: 30%; font-size: 16px; }
-.spark-two { left: 64%; top: 40%; font-size: 11px; animation-delay: .7s; }
-.spark-three { left: 72%; top: 27%; font-size: 22px; animation-delay: 1.2s; }
 
 .delivery-caption {
   position: absolute;
-  z-index: 8;
   left: 50%;
-  bottom: 20px;
+  bottom: 18px;
   transform: translateX(-50%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 15px;
-  border: 1px solid rgba(230,184,0,.18);
-  border-radius: 50px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  color: var(--text-muted);
-  box-shadow: 0 8px 25px rgba(0,0,0,.08);
-  backdrop-filter: blur(8px);
-  white-space: nowrap;
-  font-size: 11px;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .delivery-caption i { color: var(--primary); }
 
-@keyframes deliveryJourney {
-  0% {
-    left: 18%;
-    opacity: 0;
-    transform: translateY(0) scale(.94);
-  }
-  8% {
-    left: 18%;
-    opacity: 1;
-    transform: translateY(0) scale(.94);
-  }
-  12% { transform: translateY(-2px) scale(.94); }
-  22% { transform: translateY(0) scale(.94); }
-  48%, 55% {
-    left: calc(50% - 29px);
-    transform: translateY(0) scale(1);
-  }
-  82% {
-    left: calc(82% - 58px);
-    opacity: 1;
-    transform: translateY(0) scale(.94);
-  }
-  92% {
-    left: calc(82% - 58px);
-    opacity: 1;
-    transform: translateY(0) scale(.94);
-  }
-  100% {
-    left: calc(82% - 58px);
-    opacity: 0;
-    transform: translateY(0) scale(.94);
-  }
-}
-
-@keyframes legLeft {
-  from { transform: rotate(22deg); }
-  to { transform: rotate(-24deg); }
-}
-
-@keyframes legRight {
-  from { transform: rotate(-24deg); }
-  to { transform: rotate(22deg); }
-}
-
-@keyframes armBack {
-  from { transform: rotate(30deg); }
-  to { transform: rotate(-4deg); }
-}
-
-@keyframes armFront {
-  from { transform: rotate(-48deg); }
-  to { transform: rotate(-30deg); }
-}
-
-@keyframes shadowWalk {
-  from { transform: scaleX(.82); opacity: .10; }
-  to { transform: scaleX(1); opacity: .16; }
-}
-
-@keyframes sparkFloat {
-  0%, 100% { transform: translateY(5px) scale(.8); opacity: .25; }
-  50% { transform: translateY(-8px) scale(1); opacity: .7; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .delivery-person,
-  .person-shadow,
-  .person-arm,
-  .person-leg,
-  .delivery-spark {
+  .dl-cloud-1,
+  .dl-cloud-2 {
     animation: none;
   }
 }
 
 @media (max-width: 768px) {
   .delivery-animation {
-    height: 350px;
+    height: 340px;
     border-radius: 22px;
-  }
-
-  .delivery-shop {
-    bottom: 73px;
-    width: 82px;
-    height: 112px;
-  }
-
-  .shop-one { left: 4%; }
-  .shop-two { right: 4%; }
-
-  .shop-sign {
-    height: 31px;
-  }
-
-  .shop-sign span { font-size: 6px; }
-  .shop-sign strong { font-size: 8px; }
-
-  .shop-awning {
-    top: 31px;
-    height: 11px;
-  }
-
-  .shop-front {
-    height: 72px;
-    padding: 8px 6px 0;
-  }
-
-  .shop-window {
-    width: 32px;
-    height: 42px;
-  }
-
-  .window-bag {
-    width: 18px;
-    height: 24px;
-    font-size: 6px;
-  }
-
-  .shop-door {
-    width: 22px;
-    height: 50px;
-  }
-
-  .delivery-road {
-    bottom: 55px;
-    height: 30px;
-  }
-
-  .delivery-person {
-    bottom: 71px;
-    transform: scale(.76);
-  }
-
-  @keyframes deliveryJourney {
-    0% { left: 20%; opacity: 0; transform: translateY(0) scale(.72); }
-    8% { left: 20%; opacity: 1; transform: translateY(0) scale(.72); }
-    12% { transform: translateY(-2px) scale(.72); }
-    22% { transform: translateY(0) scale(.72); }
-    48%, 55% { left: calc(50% - 22px); transform: translateY(0) scale(.78); }
-    82% { left: calc(80% - 43px); opacity: 1; transform: translateY(0) scale(.72); }
-    92% { left: calc(80% - 43px); opacity: 1; transform: translateY(0) scale(.72); }
-    100% { left: calc(80% - 43px); opacity: 0; transform: translateY(0) scale(.72); }
   }
 
   .delivery-caption {
     bottom: 12px;
-    padding: 7px 11px;
-    font-size: 9px;
+    padding: 7px 12px;
+    font-size: 11px;
   }
-
-  .spark-one { left: 29%; top: 28%; }
-  .spark-two { left: 62%; top: 37%; }
-  .spark-three { left: 73%; top: 25%; }
 }
+
 /* ---------- MOBILE: CART BUTTON + BOTTOM NAV ---------- */
 .mobile-cart,
 .bottom-nav {

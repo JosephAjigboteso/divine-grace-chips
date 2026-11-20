@@ -26,6 +26,139 @@ function setupThemeToggle() {
   updateIcons();
 }
 
+/* ---------- DELIVERY ANIMATION (about section) ----------
+   One 10-second loop:
+   wait at the Divine Grace shop → walk to Mini Mart with a pouch → hand it over
+   ("Delivered") → walk back empty-handed → pick up the next pouch.
+   Only runs while the scene is on screen. */
+function setupDelivery() {
+  const scene = document.querySelector('[data-delivery]');
+  if (!scene) return;
+  const q = sel => scene.querySelector(sel);
+  const walker = q('[data-dl-walker]');
+  const face = q('[data-dl-face]');
+  const body = q('[data-dl-body]');
+  const legF = q('[data-dl-leg-front]');
+  const legB = q('[data-dl-leg-back]');
+  const armF = q('[data-dl-arm-front]');
+  const armB = q('[data-dl-arm-back]');
+  const carried = q('[data-dl-carried]');
+  const stock = q('[data-dl-stock]');
+  const bubble = q('[data-dl-bubble]');
+  const shadow = q('[data-dl-shadow]');
+  const caption = q('[data-dl-caption] span');
+  if (!walker || !legF) return;
+
+  const LOOP = 10000;            // ms
+  const START_X = 150;           // in front of the Divine Grace door
+  const END_X = 452;             // in front of the Mini Mart door
+  const STEP = 720;              // ms per full stride
+  // timeline (fractions of the loop)
+  const T = { leave: 0.06, arrive: 0.44, handOver: 0.49, turn: 0.56, back: 0.58, home: 0.92, pickUp: 0.96 };
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const ease = t => t * t * (3 - 2 * t);
+  const walkEase = t => 0.75 * t + 0.25 * ease(t);   // mostly steady, soft start and stop
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let rafId = null, startTime = null, visible = false, lastCaption = '';
+
+  const pose = (x, facingRight, walking, walkMs, carrying) => {
+    const phase = walking ? (walkMs / STEP) * Math.PI * 2 : 0;
+    const swing = walking ? Math.sin(phase) : 0;
+    const bob = walking ? -Math.abs(Math.sin(phase)) * 2.4 : 0;
+
+    walker.setAttribute('transform', `translate(${x.toFixed(1)} 344)`);
+    face.setAttribute('transform', facingRight ? '' : 'scale(-1 1)');
+    body.setAttribute('transform', `translate(0 ${bob.toFixed(2)})`);
+    legF.setAttribute('transform', `translate(0 -50) rotate(${(swing * 26).toFixed(1)})`);
+    legB.setAttribute('transform', `translate(0 -50) rotate(${(-swing * 26).toFixed(1)})`);
+    armB.setAttribute('transform', `translate(-2 -92) rotate(${(swing * 24).toFixed(1)})`);
+    // carrying: front arm held forward, holding the pouch; otherwise it swings
+    const front = carrying ? -58 + swing * 3 : -swing * 24;
+    armF.setAttribute('transform', `translate(2 -92) rotate(${front.toFixed(1)})`);
+    carried.style.opacity = carrying ? 1 : 0;
+    carried.setAttribute('transform', `translate(0 ${(carrying ? swing * 0.8 : 0).toFixed(2)})`);
+    shadow.setAttribute('rx', (22 - Math.abs(bob) * 0.8).toFixed(1));
+  };
+
+  const render = now => {
+    const t = ((now - startTime) % LOOP) / LOOP;
+    const ms = t * LOOP;
+    let x = START_X, right = true, walking = false, walkMs = 0, carrying = true;
+
+    if (t < T.leave) {                          // waiting at the Divine Grace shop
+      x = START_X;
+    } else if (t < T.arrive) {                  // walking to Mini Mart with the pouch
+      const k = (t - T.leave) / (T.arrive - T.leave);
+      x = START_X + (END_X - START_X) * walkEase(k);
+      walking = true; walkMs = ms - T.leave * LOOP;
+    } else if (t < T.back) {                    // handing over
+      x = END_X;
+      carrying = t < T.handOver;
+      right = t < T.turn;
+    } else if (t < T.home) {                    // walking back, empty-handed
+      const k = (t - T.back) / (T.home - T.back);
+      x = END_X + (START_X - END_X) * walkEase(k);
+      walking = true; walkMs = ms - T.back * LOOP;
+      right = false; carrying = false;
+    } else {                                    // back home: turn round, pick up the next pouch
+      x = START_X;
+      right = t >= T.pickUp - 0.02;
+      carrying = t >= T.pickUp;
+    }
+    pose(x, right, walking, walkMs, carrying);
+
+    // pouch on Mini Mart's shelf: appears at hand-over, fades just before the loop restarts
+    const stockOn = t >= T.handOver && t < 0.985;
+    stock.style.opacity = stockOn ? 1 : 0;
+
+    // "Delivered" bubble pops in after the hand-over
+    const b = clamp((t - T.handOver) / 0.03, 0, 1) * (1 - clamp((t - 0.64) / 0.04, 0, 1));
+    bubble.style.opacity = b.toFixed(2);
+    bubble.setAttribute('transform', `translate(497 ${(110 - 8 * ease(clamp((t - T.handOver) / 0.04, 0, 1))).toFixed(1)})`);
+
+    const text = t >= T.handOver && t < 0.7 ? 'Delivered fresh!' : 'Fresh chips on the way';
+    if (caption && text !== lastCaption) { caption.textContent = text; lastCaption = text; }
+  };
+
+  const loop = now => {
+    if (startTime === null) startTime = now;
+    render(now);
+    rafId = requestAnimationFrame(loop);
+  };
+
+  const start = () => {
+    if (rafId || reduce.matches || !visible || document.hidden) return;
+    // resume where we left off
+    startTime = startTime === null ? null : performance.now() - pausedAt;
+    rafId = requestAnimationFrame(loop);
+  };
+  let pausedAt = 0;
+  const stop = () => {
+    if (!rafId) return;
+    cancelAnimationFrame(rafId); rafId = null;
+    pausedAt = (performance.now() - startTime) % LOOP;
+  };
+
+  const staticFrame = () => {      // reduced motion: a still mid-delivery picture
+    pose(300, true, false, 0, true);
+    stock.style.opacity = 0; bubble.style.opacity = 0;
+  };
+
+  if (reduce.matches) staticFrame(); else pose(START_X, true, false, 0, true);
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      visible = entries[0].isIntersecting;
+      visible ? start() : stop();
+    }, { threshold: 0.15 }).observe(scene);
+  } else { visible = true; start(); }
+
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  if (reduce.addEventListener) reduce.addEventListener('change', () => { stop(); reduce.matches ? staticFrame() : start(); });
+}
+
 /* ---------- MOBILE BOTTOM NAV ---------- */
 function setupBottomNav() {
   const bar = document.querySelector('.bottom-nav');
@@ -873,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupReviewsCarousel()
   setupMenu();
   setupBottomNav();
+  setupDelivery();
   setupBadgeRotation();
   setupCounters();
   setupProductImageViewer();
