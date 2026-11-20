@@ -460,8 +460,16 @@ function setupOrderPage() {
   let reference = '';
   let lastFocus = null;
 
-  const newReference = () => 'DG-' + Date.now().toString(36).slice(-5).toUpperCase() +
-    Math.floor(Math.random() * 36).toString(36).toUpperCase();
+  /* Order reference: DG-MMDD-NNNN, e.g. DG-1120-4821
+     MMDD = today's month and day, NNNN = random 4-digit number (1000–9999). */
+  const newReference = () => {
+    const now = new Date();
+    const mmdd = String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    let n;
+    if (window.crypto && crypto.getRandomValues) n = 1000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 9000);
+    else n = 1000 + Math.floor(Math.random() * 9000);
+    return `DG-${mmdd}-${n}`;
+  };
 
   const openPayment = () => {
     reference = reference || newReference();
