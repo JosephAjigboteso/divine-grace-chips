@@ -312,16 +312,21 @@ function setupAdditionalProducts() {
   syncOrder();
 }
 
-/* ---------- PRODUCT DATA ---------- */
+/* ---------- PRODUCT DATA ----------
+   images: the first one is shown on the card; all of them appear in the
+           product details slider (add more photos per product here).
+   weight: shown in the product details when filled in, e.g. '150 g'. */
+const RANGE_PHOTOS = ['asset/gallery/range-studio.jpg', 'asset/gallery/range-outdoor.jpg'];
+
 const products = [
-  { id: 'ziploc', name: 'Ziploc', price: 1000, group: 'sachet', image: 'asset/clear/Ziploc.png', desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
-  { id: 'refill-2000', name: 'Refill Pack', price: 2000, group: 'sachet', image: 'asset/clear/refill.png', desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
-  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', image: 'asset/clear/refill.png', desc: 'A generous plantain option for sharing, events and resellers.' },
-  { id: 'potato-dozen', name: 'Potato Chips — Dozen', price: 3000, group: 'sachet', image: 'asset/clear/potato.png', desc: 'Crunchy potato chips for something a little different.' },
-  { id: 'small-jar', name: 'Small Jar', price: 3500, group: 'jar', image: 'asset/clear/small-jar.png', desc: 'A handy jar filled with crispy plantain goodness.' },
-  { id: 'refill-4000', name: 'Refill Pack', price: 4000, group: 'jar', image: 'asset/clear/refill-2.png', desc: 'A larger refill for your jar or for sharing.' },
-  { id: 'big-jar', name: 'Big Jar', price: 5500, group: 'jar', image: 'asset/clear/Big-Jar.png', desc: 'A generous jar for homes, offices, parties and serious snackers.' },
-  { id: 'refill-6000', name: 'Refill Pack', price: 6000, group: 'jar', image: 'asset/clear/Big-refill.png', desc: 'A large refill option for bigger orders and regular customers.' }
+  { id: 'ziploc', name: 'Ziploc', price: 1000, group: 'sachet', weight: '', image: 'asset/clear/Ziploc.png', images: ['asset/clear/Ziploc.png', ...RANGE_PHOTOS], desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
+  { id: 'refill-2000', name: 'Refill Pack', price: 2000, group: 'sachet', weight: '', image: 'asset/clear/refill.png', images: ['asset/clear/refill.png', ...RANGE_PHOTOS], desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
+  { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', weight: '', image: 'asset/clear/refill.png', images: ['asset/clear/refill.png', ...RANGE_PHOTOS], desc: 'A generous plantain option for sharing, events and resellers.' },
+  { id: 'potato-dozen', name: 'Potato Chips — Dozen', price: 3000, group: 'sachet', weight: '', image: 'asset/clear/potato.png', images: ['asset/clear/potato.png', ...RANGE_PHOTOS], desc: 'Crunchy potato chips for something a little different.' },
+  { id: 'small-jar', name: 'Small Jar', price: 3500, group: 'jar', weight: '', image: 'asset/clear/small-jar.png', images: ['asset/clear/small-jar.png', ...RANGE_PHOTOS], desc: 'A handy jar filled with crispy plantain goodness.' },
+  { id: 'refill-4000', name: 'Refill Pack', price: 4000, group: 'jar', weight: '', image: 'asset/clear/refill-2.png', images: ['asset/clear/refill-2.png', ...RANGE_PHOTOS], desc: 'A larger refill for your jar or for sharing.' },
+  { id: 'big-jar', name: 'Big Jar', price: 5500, group: 'jar', weight: '', image: 'asset/clear/Big-Jar.png', images: ['asset/clear/Big-Jar.png', ...RANGE_PHOTOS], desc: 'A generous jar for homes, offices, parties and serious snackers.' },
+  { id: 'refill-6000', name: 'Refill Pack', price: 6000, group: 'jar', weight: '', image: 'asset/clear/Big-refill.png', images: ['asset/clear/Big-refill.png', ...RANGE_PHOTOS], desc: 'A large refill option for bigger orders and regular customers.' }
 ];
 
 const money = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
@@ -331,8 +336,9 @@ const getProduct = id => products.find(p => p.id === id) || products[0];
 const card = p => `
   <article class="product-card">
     <div class="product-image">
-      <button class="image-viewer-trigger" type="button" data-image="${p.image}" data-name="${p.name}" aria-label="View ${p.name} image">
+      <button class="image-viewer-trigger" type="button" data-product="${p.id}" aria-label="View details and photos of ${p.name}" aria-haspopup="dialog">
         <img src="${p.image}" alt="${p.name}" loading="lazy">
+        <span class="quick-view" aria-hidden="true"><i class="fa-solid fa-expand"></i> View details</span>
       </button>
     </div>
     <div class="product-body">
@@ -881,44 +887,137 @@ function setupProductImageViewer() {
   const triggers = document.querySelectorAll('.image-viewer-trigger');
   if (!triggers.length) return;
 
+  const GROUP_LABEL = { sachet: 'Sachets & everyday snacks', jar: 'Jars & refills' };
+
   const modal = document.createElement('div');
   modal.className = 'image-viewer';
-  modal.setAttribute('role', 'dialog');
-  modal.setAttribute('aria-modal', 'true');
-  modal.setAttribute('aria-label', 'Product image viewer');
   modal.innerHTML = `
-    <button class="image-viewer-close" type="button" aria-label="Close image viewer">&times;</button>
-    <figure>
-      <img class="image-viewer-preview" alt="">
-      <figcaption class="image-viewer-caption"></figcaption>
-    </figure>
+    <div class="pv" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+      <button class="pv-close" type="button" aria-label="Close product details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+
+      <div class="pv-gallery">
+        <div class="pv-stage" tabindex="0" aria-roledescription="carousel" aria-label="Product photos">
+          <div class="pv-track"></div>
+          <button class="pv-arrow pv-prev" type="button" aria-label="Previous photo"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+          <button class="pv-arrow pv-next" type="button" aria-label="Next photo"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+          <span class="pv-count" aria-live="polite"></span>
+        </div>
+        <div class="pv-thumbs"></div>
+      </div>
+
+      <div class="pv-info">
+        <span class="pv-group eyebrow"></span>
+        <h2 class="pv-title" id="pv-title"></h2>
+        <strong class="pv-price"></strong>
+        <p class="pv-desc"></p>
+        <dl class="pv-specs"></dl>
+        <a class="btn btn-primary pv-order" href="order.html">Order this pack <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+        <p class="pv-note"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> We confirm every order and delivery by phone or WhatsApp.</p>
+      </div>
+    </div>
   `;
   document.body.appendChild(modal);
 
-  const preview = modal.querySelector('.image-viewer-preview');
-  const caption = modal.querySelector('.image-viewer-caption');
-  const close = modal.querySelector('.image-viewer-close');
+  const $ = sel => modal.querySelector(sel);
+  const dialog = $('.pv'), stage = $('.pv-stage'), track = $('.pv-track'), thumbs = $('.pv-thumbs');
+  const prev = $('.pv-prev'), next = $('.pv-next'), count = $('.pv-count'), closeBtn = $('.pv-close');
+  let photos = [], index = 0, lastTrigger = null;
+
+  const go = i => {
+    index = (i + photos.length) % photos.length;
+    track.style.transform = `translateX(-${index * 100}%)`;
+    [...thumbs.children].forEach((t, n) => {
+      t.classList.toggle('is-active', n === index);
+      t.setAttribute('aria-current', n === index ? 'true' : 'false');
+    });
+    [...track.children].forEach((s, n) => s.setAttribute('aria-hidden', n === index ? 'false' : 'true'));
+    count.textContent = `${index + 1} / ${photos.length}`;
+  };
+
+  const open = (product, trigger) => {
+    lastTrigger = trigger;
+    photos = (product.images && product.images.length ? product.images : [product.image]);
+    const single = photos.length < 2;
+    dialog.classList.toggle('is-single', single);
+
+    track.innerHTML = photos.map((src, i) => `
+      <div class="pv-slide${src.includes('/clear/') ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
+        <img src="${src}" alt="${product.name}${i ? ` — photo ${i + 1}` : ''}" draggable="false">
+      </div>`).join('');
+    thumbs.innerHTML = single ? '' : photos.map((src, i) => `
+      <button type="button" class="pv-thumb${src.includes('/clear/') ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
+        <img src="${src}" alt="">
+      </button>`).join('');
+    [...thumbs.children].forEach((t, i) => t.addEventListener('click', () => go(i)));
+
+    $('.pv-group').textContent = GROUP_LABEL[product.group] || 'Divine Grace Chips';
+    $('.pv-title').textContent = product.name;
+    $('.pv-price').textContent = money.format(product.price);
+    $('.pv-desc').textContent = product.desc;
+    $('.pv-order').href = `order.html?product=${encodeURIComponent(product.id)}`;
+
+    const specs = [];
+    if (product.weight) specs.push(['Weight', product.weight]);
+    specs.push(['Pack', product.group === 'jar' ? 'Jar / refill range' : 'Sachet range']);
+    if (!/potato/i.test(product.name)) {
+      specs.push(['Ingredients', 'Plantain, vegetable oil, chilli pepper, salt']);   // from the pack label
+      specs.push(['Plantain', 'Ripe or unripe — choose when ordering']);
+    }
+    $('.pv-specs').innerHTML = specs.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+
+    track.style.transition = 'none'; go(0); void track.offsetWidth; track.style.transition = '';
+    modal.classList.add('is-open');
+    document.body.classList.add('viewer-open');
+    closeBtn.focus({ preventScroll: true });
+  };
 
   const hide = () => {
+    if (!modal.classList.contains('is-open')) return;
     modal.classList.remove('is-open');
     document.body.classList.remove('viewer-open');
+    if (lastTrigger) lastTrigger.focus({ preventScroll: true });
   };
 
   triggers.forEach(trigger => trigger.addEventListener('click', () => {
-    preview.src = trigger.dataset.image;
-    preview.alt = trigger.dataset.name;
-    caption.textContent = trigger.dataset.name;
-    modal.classList.add('is-open');
-    document.body.classList.add('viewer-open');
-    close.focus();
+    const product = products.find(p => p.id === trigger.dataset.product);
+    if (product) open(product, trigger);
   }));
 
-  close.addEventListener('click', hide);
-  modal.addEventListener('click', event => {
-    if (event.target === modal) hide();
+  prev.addEventListener('click', () => go(index - 1));
+  next.addEventListener('click', () => go(index + 1));
+  closeBtn.addEventListener('click', hide);
+  modal.addEventListener('click', e => { if (e.target === modal) hide(); });
+
+  document.addEventListener('keydown', e => {
+    if (!modal.classList.contains('is-open')) return;
+    if (e.key === 'Escape') hide();
+    if (e.key === 'ArrowLeft' && photos.length > 1) go(index - 1);
+    if (e.key === 'ArrowRight' && photos.length > 1) go(index + 1);
+    if (e.key === 'Tab') {            // keep keyboard focus inside the window
+      const f = [...dialog.querySelectorAll('button, a[href], [tabindex="0"]')].filter(el => el.offsetParent !== null);
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    }
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') hide();
+
+  /* swipe between photos */
+  let sx = 0, sy = 0, dx = 0, dragging = false;
+  stage.addEventListener('touchstart', e => {
+    if (photos.length < 2) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; dragging = true;
+    track.style.transition = 'none';
+  }, { passive: true });
+  stage.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    dx = e.touches[0].clientX - sx;
+    if (Math.abs(e.touches[0].clientY - sy) > Math.abs(dx) + 10) { dragging = false; track.style.transition = ''; go(index); return; }
+    track.style.transform = `translateX(calc(-${index * 100}% + ${dx}px))`;
+  }, { passive: true });
+  stage.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false; track.style.transition = '';
+    if (Math.abs(dx) > 50) go(index + (dx < 0 ? 1 : -1)); else go(index);
   });
 }
 
