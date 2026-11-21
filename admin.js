@@ -604,6 +604,7 @@
       $('batchHeading').textContent = `Batch ${open.number} is open`;
     }
     $('batchNone').hidden = batchMode !== 'none';
+    if (batchMode !== 'none') $('batchNoneNote').innerHTML = '';   // no hidden duplicate "Send dates" button
     $('batchSub').hidden = batchMode === 'none';
     state.hidden = batchMode === 'none';
     $('batchCard').classList.toggle('is-none', batchMode === 'none');
