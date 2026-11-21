@@ -16,7 +16,8 @@
     confirmed: { label: 'Confirmed',          icon: 'fa-circle-check',   tone: 'info' },
     out:       { label: 'Out for delivery',   icon: 'fa-truck-fast',     tone: 'info' },
     delivered: { label: 'Delivered',          icon: 'fa-house-circle-check', tone: 'good' },
-    cancelled: { label: 'Cancelled',          icon: 'fa-ban',            tone: 'critical' }
+    cancelled: { label: 'Cancelled',          icon: 'fa-ban',            tone: 'critical' },
+    date_sent: { label: 'Delivery date sent on WhatsApp', icon: 'fa-paper-plane', tone: 'info' }
   };
   const pill = status => {
     const s = STATUS[status] || STATUS.pending;
@@ -37,6 +38,21 @@
   const itemsSummary = o => o.items.map(it => `${itemName(it)}${it.type ? ` (${it.type})` : ''} × ${it.qty}`).join(', ');
 
   let orders = [], productsData = [];
+
+  /* ---------- delivery batch helpers ---------- */
+  const batchOf = o => (o.batchId ? Batch.byId(o.batchId) : null);
+  const awaiting = o => !!o.awaitingBatch && o.status !== 'cancelled';
+  const batchTag = o => (awaiting(o)
+    ? '<span class="batch-tag"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> New batch</span>'
+    : (batchOf(o) ? `<span class="batch-label">${esc(Batch.label(batchOf(o)))}</span>` : ''));
+
+  // the ready-made WhatsApp message with the delivery date
+  const dateMessage = (o, b) => {
+    const first = o.customer.name.trim().split(/\s+/)[0];
+    const place = o.location === 'Home Delivery' ? `Delivery to: ${o.address || 'your address'}.` : `Pickup: ${o.location}.`;
+    return `Hi ${first} 👋, your Divine Grace order ${o.paymentRef || o.ref} will be delivered on ${Batch.format(b.date)}${b.note ? `, ${b.note.charAt(0).toLowerCase() + b.note.slice(1)}` : ''}. ${place}`;
+  };
+  const waLink = (o, text) => `https://wa.me/${'234' + o.customer.phone.replace(/\D/g, '').replace(/^234/, '').replace(/^0/, '')}?text=${encodeURIComponent(text)}`;
   let range = 30;
 
   /* ======================= toast ======================= */
@@ -114,9 +130,19 @@
     updateBadge();
     renderOrders();
     renderProducts();
+    startBatchCard();
     const start = (location.hash || '').slice(1);
     go(VIEWS[start] ? start : 'overview');
   }
+
+  // a new order was placed in the shop (another tab): pull it in
+  if (typeof ShopOrders !== 'undefined') ShopOrders.onChange(async () => {
+    if ($('appView').hidden) return;
+    orders = await AdminData.getOrders();
+    updateBadge(); renderOrders(); renderBatchCard();
+    if (!document.querySelector('[data-view="overview"].admin-view').hidden) renderOverview();
+    toast('New order received');
+  });
 
   const updateBadge = () => {
     const n = orders.filter(o => o.status === 'pending').length;
@@ -182,11 +208,11 @@
       </div>`).join('');
 
     // needs attention
-    const att = orders.filter(o => ['pending', 'confirmed', 'out'].includes(o.status)).slice(0, 6);
+    const att = [...orders.filter(awaiting), ...orders.filter(o => !awaiting(o) && ['pending', 'confirmed', 'out'].includes(o.status))].slice(0, 6);
     $('attentionList').innerHTML = att.length ? att.map(o => `
       <li><button type="button" class="attention-item" data-order="${o.id}">
         <span class="att-main"><strong>${esc(o.customer.name)}</strong><span>${esc(o.ref)} · ${naira.format(o.total)} · ${esc(o.location)}</span></span>
-        ${pill(o.status)}
+        ${awaiting(o) ? batchTag(o) : pill(o.status)}
       </button></li>`).join('') : '<li class="att-empty">All caught up 🎉</li>';
   }
 
@@ -287,21 +313,23 @@
 
   /* ======================= orders ======================= */
   let statusFilter = 'all', search = '', shown = 20;
-  const TABS = [['all', 'All'], ['pending', 'Payment to confirm'], ['confirmed', 'Confirmed'], ['out', 'Out for delivery'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
+  const TABS = [['all', 'All'], ['awaiting', 'Awaiting new batch'], ['pending', 'Payment to confirm'], ['confirmed', 'Confirmed'], ['out', 'Out for delivery'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
+  const inTab = (o, k) => (k === 'all' ? true : k === 'awaiting' ? awaiting(o) : o.status === k);
 
   function renderOrders() {
     $('statusTabs').innerHTML = TABS.map(([k, label]) => {
-      const n = k === 'all' ? orders.length : orders.filter(o => o.status === k).length;
-      return `<button type="button" role="tab" class="status-tab${statusFilter === k ? ' is-active' : ''}" aria-selected="${statusFilter === k}" data-status="${k}">${label}<em>${n}</em></button>`;
+      const n = orders.filter(o => inTab(o, k)).length;
+      if (k === 'awaiting' && !n && statusFilter !== 'awaiting') return '';
+      return `<button type="button" role="tab" class="status-tab${statusFilter === k ? ' is-active' : ''}${k === 'awaiting' ? ' tab-awaiting' : ''}" aria-selected="${statusFilter === k}" data-status="${k}">${label}<em>${n}</em></button>`;
     }).join('');
 
     const q = search.trim().toLowerCase();
-    const list = orders.filter(o => (statusFilter === 'all' || o.status === statusFilter) &&
+    const list = orders.filter(o => inTab(o, statusFilter) &&
       (!q || [o.customer.name, o.customer.phone, o.ref].some(v => v.toLowerCase().includes(q))));
 
     $('ordersBody').innerHTML = list.slice(0, shown).map(o => `
       <tr data-order="${o.id}" tabindex="0">
-        <td data-label="Order"><strong class="mono">${esc(o.ref)}</strong><span class="sub">${fmtDateTime(o.createdAt)}</span></td>
+        <td data-label="Order"><strong class="mono">${esc(o.ref)}</strong><span class="sub">${fmtDateTime(o.createdAt)}</span>${batchTag(o)}</td>
         <td data-label="Customer"><strong>${esc(o.customer.name)}</strong><span class="sub">${esc(o.customer.phone)}</span></td>
         <td data-label="Items" class="items-cell">${esc(itemsSummary(o))}</td>
         <td data-label="Location">${esc(o.location)}</td>
@@ -428,6 +456,46 @@
   };
   let openId = null, lastFocus = null;
 
+  // "Delivery batch" part of the order details, with the Send date on WhatsApp button
+  function batchSection(o) {
+    const open = Batch.open();
+    const sent = o.history.filter(h => h.status === 'date_sent').pop();
+    const done = ['delivered', 'cancelled'].includes(o.status);
+    if (awaiting(o)) {
+      return `<section class="d-section d-batch is-awaiting">
+        <h3>Delivery batch</h3>
+        <p>${batchTag(o)} Ordered after the last batch closed, so this customer doesn’t have a delivery date yet.</p>
+        ${open && Batch.taking(open)
+          ? `<a class="btn btn-whatsapp d-send" href="${esc(waLink(o, dateMessage(o, open)))}" target="_blank" rel="noopener" data-send-date="${esc(open.id)}">
+               <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Send date on WhatsApp</a>
+             <p class="d-muted">Sends <strong>${esc(Batch.label(open))}</strong> and moves this order into that batch.</p>`
+          : '<p class="d-muted">Open a new batch (Products → Delivery batch) to send this customer a date.</p>'}
+      </section>`;
+    }
+    const b = batchOf(o);
+    if (!b) return '';
+    return `<section class="d-section d-batch">
+      <h3>Delivery batch</h3>
+      <p><strong>${esc(Batch.label(b))}</strong>${b.note ? ` · ${esc(b.note)}` : ''}</p>
+      ${!done && Batch.parse(b.date) >= new Date(new Date().setHours(0, 0, 0, 0))
+        ? `<a class="btn btn-whatsapp d-send" href="${esc(waLink(o, dateMessage(o, b)))}" target="_blank" rel="noopener" data-send-date="${esc(b.id)}">
+             <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> ${sent ? 'Send date again' : 'Send date on WhatsApp'}</a>` : ''}
+      ${sent ? `<p class="d-muted"><i class="fa-solid fa-check" aria-hidden="true"></i> Date sent ${fmtDateTime(sent.at)}</p>` : ''}
+    </section>`;
+  }
+
+  // tapping "Send date on WhatsApp": WhatsApp opens (link), and the order is updated here
+  $('drawerBody').addEventListener('click', async e => {
+    const a = e.target.closest('[data-send-date]'); if (!a || !openId) return;
+    const wasAwaiting = awaiting(orders.find(o => o.id === openId));
+    const updated = await AdminData.sendDate(openId, a.dataset.sendDate);
+    orders = orders.map(o => (o.id === updated.id ? updated : o));
+    renderOrders();
+    if (!document.querySelector('[data-view="overview"].admin-view').hidden) renderOverview();
+    setTimeout(() => openOrder(updated.id), 300);
+    toast(wasAwaiting ? `${updated.ref} moved to ${Batch.label(Batch.byId(updated.batchId))}` : `${updated.ref}: delivery date sent`);
+  });
+
   function openOrder(id) {
     const o = orders.find(x => x.id === id); if (!o) return;
     openId = id; lastFocus = document.activeElement;
@@ -445,6 +513,8 @@
           ${o.customer.email ? `<a href="mailto:${esc(o.customer.email)}"><i class="fa-regular fa-envelope" aria-hidden="true"></i> Email</a>` : ''}
         </div>
       </section>
+
+      ${batchSection(o)}
 
       <section class="d-section d-grid">
         <div><h3>Delivery</h3><p>${esc(o.location)}</p>${o.address ? `<p class="d-muted">${esc(o.address)}</p>` : ''}</div>
@@ -469,7 +539,7 @@
 
       <section class="d-section">
         <h3>Timeline</h3>
-        <ol class="d-timeline">${o.history.map(h => `<li><span class="tl-dot tone-${STATUS[h.status].tone}"></span><strong>${STATUS[h.status].label}</strong><span>${fmtDateTime(h.at)}</span></li>`).join('')}</ol>
+        <ol class="d-timeline">${o.history.map(h => `<li><span class="tl-dot tone-${(STATUS[h.status] || STATUS.confirmed).tone}"></span><strong>${(STATUS[h.status] || { label: h.status }).label}</strong><span>${fmtDateTime(h.at)}</span></li>`).join('')}</ol>
       </section>`;
 
     const actions = NEXT[o.status];
@@ -506,26 +576,62 @@
   });
 
   /* ======================= delivery batch ======================= */
-  const fillBatchForm = () => {
-    const b = Batch.get();
-    $('bDate').value = b.date; $('bCloses').value = b.closes; $('bNote').value = b.note; $('bShow').checked = b.show !== false;
+  // modes: 'none' (no batch open), 'new' (starting one), 'open' (a batch is open)
+  let batchMode = 'none';
+
+  const waitingCount = () => orders.filter(awaiting).length;
+
+  function renderBatchCard() {
+    const open = Batch.open();
+    if (open && batchMode !== 'open') batchMode = 'open';
+    if (!open && batchMode === 'open') batchMode = 'none';
+    const state = $('batchState');
+    const cur = Batch.current();
+    if (batchMode === 'none') {
+      state.className = 'batch-state is-off'; state.textContent = 'No batch open';
+      $('batchHeading').textContent = 'Delivery batch';
+      const n = waitingCount();
+      $('batchNoneText').innerHTML = `Customers can still order: new orders are tagged <span class="batch-tag"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> New batch</span> until you open the next batch and send them the date.${n ? ` <strong>${n} order${n === 1 ? ' is' : 's are'} waiting.</strong>` : ''}`;
+    } else if (batchMode === 'new') {
+      state.className = 'batch-state is-new'; state.textContent = 'New batch';
+      const next = Batch.all().reduce((m, x) => Math.max(m, x.number), 0) + 1;
+      $('batchHeading').textContent = `Start Batch ${next}`;
+    } else {
+      state.className = 'batch-state ' + (!open.show ? 'is-off' : cur && cur.closed ? 'is-closed' : 'is-live');
+      state.textContent = !open.show ? 'Hidden from customers' : cur && cur.closed ? 'Orders closed' : 'Live on the shop';
+      $('batchHeading').textContent = `Batch ${open.number} is open`;
+    }
+    $('batchNone').hidden = batchMode !== 'none';
+    $('batchForm').hidden = batchMode === 'none';
+    $('bCancel').hidden = batchMode !== 'new';
+    $('bClose').hidden = batchMode !== 'open';
+    $('batchResetNote').hidden = batchMode !== 'new';
+    $('bSave').innerHTML = batchMode === 'new'
+      ? '<i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Open batch'
+      : '<i class="fa-solid fa-check" aria-hidden="true"></i> Save changes';
+    // waiting orders reminder when a batch is open
+    const n = waitingCount();
+    $('batchWaiting').hidden = !(batchMode === 'open' && n);
+    $('batchWaiting').innerHTML = n ? `<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> <span><strong>${n} order${n === 1 ? '' : 's'}</strong> placed between batches ${n === 1 ? 'is' : 'are'} waiting for a delivery date.</span> <button type="button" class="link-btn" data-goto-awaiting>Send dates</button>` : '';
     previewBatch();
+  }
+
+  const fillForm = b => {
+    $('bDate').value = b ? b.date : ''; $('bCloses').value = b ? b.closes : ''; $('bNote').value = b ? b.note : ''; $('bShow').checked = b ? b.show !== false : true;
   };
 
-  // what customers will see, built from the form (saved or not)
+  // what customers will see, built from the form
   function previewBatch() {
+    if (batchMode === 'none') return;
     const date = $('bDate').value, closes = $('bCloses').value, note = $('bNote').value.trim(), show = $('bShow').checked;
-    const saved = Batch.current();
-    const state = $('batchState');
-    state.className = 'batch-state ' + (saved ? (saved.closed ? 'is-closed' : 'is-live') : 'is-off');
-    state.textContent = saved ? (saved.closed ? 'Orders closed' : 'Live on the shop') : 'Not showing';
     const p = $('batchPreview');
     if (!date) { p.innerHTML = '<i class="fa-regular fa-calendar" aria-hidden="true"></i> Pick a delivery date to see the customer message.'; return; }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const warn = [];
-    if (Batch.parse(date) < today) warn.push('This date has passed, so customers won’t see it.');
+    if (Batch.parse(date) < today) warn.push('This date has passed.');
     if (closes && Batch.parse(closes) > Batch.parse(date)) warn.push('“Orders close” is after the delivery date.');
-    if (!show) warn.push('Switched off: customers won’t see it.');
+    if (closes && Batch.parse(closes) < today) warn.push('Orders for this batch have closed: new orders get the “New batch” tag. Close this batch and start the next one.');
+    if (!show) warn.push('The pop-up is switched off.');
     p.innerHTML = `<span class="bp-label">Customers will see</span>
       <strong>Next delivery: ${esc(Batch.format(date))}</strong>
       <span>${note ? esc(note) + ' · ' : ''}${closes ? 'Orders close ' + esc(Batch.format(closes)) : 'No closing date'}</span>
@@ -534,24 +640,52 @@
 
   ['bDate', 'bCloses', 'bNote', 'bShow'].forEach(id => $(id).addEventListener('input', previewBatch));
 
+  $('bStart').addEventListener('click', () => {
+    batchMode = 'new'; fillForm(null);
+    renderBatchCard();
+    $('bDate').focus();
+  });
+  $('bCancel').addEventListener('click', () => { batchMode = 'none'; renderBatchCard(); });
+
   $('batchForm').addEventListener('submit', e => {
     e.preventDefault();
-    if (!$('bDate').value) { toast('Choose the expected delivery date.', 'bad'); $('bDate').focus(); return; }
-    if ($('bCloses').value && Batch.parse($('bCloses').value) > Batch.parse($('bDate').value)) { toast('“Orders close” must be on or before the delivery date.', 'bad'); return; }
-    Batch.set({ date: $('bDate').value, closes: $('bCloses').value, note: $('bNote').value.trim(), show: $('bShow').checked });   // BACKEND: save to settings
-    previewBatch();
-    toast(Batch.current() ? `Customers now see: delivery ${Batch.format($('bDate').value, false)}` : 'Saved (not showing to customers)');
+    const date = $('bDate').value, closes = $('bCloses').value;
+    if (!date) { toast('Choose the expected delivery date.', 'bad'); $('bDate').focus(); return; }
+    if (closes && Batch.parse(closes) > Batch.parse(date)) { toast('“Orders close” must be on or before the delivery date.', 'bad'); return; }
+    const fields = { date, closes, note: $('bNote').value.trim(), show: $('bShow').checked };
+    if (batchMode === 'new') {
+      const b = Batch.create(fields);                                   // BACKEND: insert into batches
+      productsData.forEach(p => Stock.set(p.id, { status: 'full', types: 'both', qty: {} }));   // every product back to Fully available
+      if (typeof products !== 'undefined') products.forEach(p => Stock.set(p.id, { status: 'full', types: 'both', qty: {} }));
+      renderProducts();
+      batchMode = 'open';
+      const n = waitingCount();
+      toast(`Batch ${b.number} is open: delivery ${Batch.format(b.date, false)}${n ? ` · ${n} waiting order${n === 1 ? '' : 's'} to message` : ''}`);
+    } else {
+      const open = Batch.open(); if (!open) return;
+      Batch.update(open.id, fields);                                     // BACKEND: update batches
+      toast('Batch saved');
+    }
+    renderBatchCard(); renderOrders();
   });
 
-  $('bClear').addEventListener('click', () => {
-    if (!confirm('Clear the delivery date? Customers will stop seeing the announcement.')) return;
-    Batch.set({ date: '', closes: '', note: '', show: true });
-    fillBatchForm();
-    toast('Delivery date cleared');
+  $('bClose').addEventListener('click', () => {
+    const open = Batch.open(); if (!open) return;
+    if (!confirm(`Close Batch ${open.number}? New orders will be tagged “New batch” until you open the next batch.`)) return;
+    Batch.close(open.id);                                               // BACKEND: update batches set status = 'closed'
+    batchMode = 'none';
+    renderBatchCard(); renderOrders();
+    toast(`Batch ${open.number} closed`);
   });
 
-  Batch.onChange(fillBatchForm);
-  fillBatchForm();
+  document.addEventListener('click', e => {
+    if (!e.target.closest('[data-goto-awaiting]')) return;
+    statusFilter = 'awaiting'; shown = 20; go('orders'); renderOrders();
+  });
+
+  Batch.onChange(() => { if (batchMode !== 'new') { fillForm(Batch.open()); renderBatchCard(); } });
+
+  const startBatchCard = () => { fillForm(Batch.open()); batchMode = Batch.open() ? 'open' : 'none'; renderBatchCard(); };
 
   /* ======================= products ======================= */
   /* Stock (stock.js) decides what customers can order:

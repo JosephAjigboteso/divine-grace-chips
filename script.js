@@ -490,7 +490,7 @@ function setupOrderPage() {
   const fillBatch = () => {
     const b = hasBatch() ? Batch.current() : null;
     $('batchStrip').hidden = !b;
-    $('deliveryField').value = b ? (b.closed ? `Next batch (after ${b.dateText})` : b.dateText + (b.note ? `, ${b.note}` : '')) : '';
+    $('deliveryField').value = hasBatch() && Batch.all().length ? Batch.assign().text : '';
     if (!b) return null;
     $('batchStripText').innerHTML = b.closed
       ? 'Orders for the current batch have closed. <strong>New orders join the next batch.</strong>'
@@ -498,7 +498,9 @@ function setupOrderPage() {
     $('batchKicker').textContent = b.closed ? 'Delivery update' : 'Next delivery';
     $('batchTitle').textContent = b.closed ? 'This batch is now closed' : b.dateText;
     $('batchText').textContent = b.closed
-      ? `Orders for the ${b.dateText} delivery closed on ${b.closesText}. You can still order: your order will go in the next delivery batch and we will confirm the date with you.`
+      ? (b.hasOpen && b.closesText
+          ? `Orders for the ${b.dateText} delivery closed on ${b.closesText}. You can still order: your order joins the next delivery batch and we will message you the delivery date on WhatsApp.`
+          : 'Orders for our last delivery batch have closed. You can still order: your order joins the next batch and we will message you the delivery date on WhatsApp.')
       : 'We deliver in batches: every order placed now is delivered together on this date.';
     const facts = [];
     if (!b.closed && b.note) facts.push(['fa-regular fa-clock', b.note]);
@@ -692,6 +694,21 @@ function setupOrderPage() {
       pay.step.hidden = true; pay.done.hidden = false;
       pay.finish.focus({ preventScroll: true });
 
+      // demo: hand the order to the admin in this browser (BACKEND: insert into orders)
+      if (typeof ShopOrders !== 'undefined') {
+        const slot = hasBatch() ? Batch.assign() : { batchId: null, awaiting: false };
+        const now = new Date().toISOString();
+        ShopOrders.add({
+          id: 'w' + Date.now().toString(36), ref: reference, createdAt: now,
+          customer: { name: $('name').value.trim(), phone: phone.value, email: ($('email').value || '').trim() },
+          orderType: (form.querySelector('[name="order_type"]:checked') || {}).value || '',
+          location: locationSelect.value, address: address.value.trim(), review: ($('review').value || '').trim(),
+          items: cart.map(line => { const p = find(line.id); return { productId: p.id, name: p.name, type: line.type, qty: line.qty, price: p.price }; }),
+          total: orderTotal(), status: 'pending', paymentRef: reference,
+          batchId: slot.batchId, awaitingBatch: !!slot.awaiting,
+          history: [{ status: 'pending', at: now }]
+        });
+      }
       if (hasStock()) Stock.take(cart, products);   // packs leave limited stock
       form.reset();
       syncLocation();

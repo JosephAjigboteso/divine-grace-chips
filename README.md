@@ -17,7 +17,7 @@ A static website (HTML, CSS, JavaScript; no build step) plus a front-end admin d
 | `script.js` | Site behaviour, product list, payment account details |
 | `admin.css`, `admin.js` | Admin dashboard styles and screens |
 | `admin-data.js` | The admin **data layer**: the only place the dashboard reads or saves data |
-| `stock.js` | Shared by shop and admin: product availability (fully available / limited packs per ripe-unripe / unavailable) and the **next delivery batch** date customers see when ordering |
+| `stock.js` | Shared by shop and admin: product availability, **delivery batches** (open / close, the date customers see), and a demo inbox that passes shop orders to the admin |
 | `asset/products/` | One folder of photos per product; see `asset/products/README.md` |
 | `asset/icons/`, `asset/og-image.jpg` | Browser icon and the link-preview card shown on WhatsApp etc. |
 
@@ -51,7 +51,11 @@ usable straight from this static site.
 | `order_items` | product, ripe/unripe, quantity, price at time of order |
 | `order_status_history` | each status change with its time (feeds the delivery charts) |
 | `stock` | per product: status (full / limited / out), ripe-unripe availability, packs left per type |
-| `settings` | the next delivery batch: expected date, optional note and order-closing date, show on/off |
+| `batches` | numbered delivery batches: expected date, order-closing date, note, show on/off, open/closed |
+
+Each order stores its `batch_id`, or `awaiting_batch = true` when it was placed after a batch closed
+(shown in the admin with a **New batch** tag). Sending that customer the date on WhatsApp moves the
+order into the open batch and removes the tag. Opening a batch resets every product to Fully available.
 
 `stock.js` works the same way: today it saves in the browser (so admin changes only reach the shop
 in that same browser); with the backend, its load/save become calls to the `stock` table and every

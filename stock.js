@@ -97,26 +97,28 @@ const Stock = (() => {
 })();
 
 /* ============================================================
-   DELIVERY BATCH — when the current orders will be delivered
+   DELIVERY BATCHES — orders are delivered together in batches
    ------------------------------------------------------------
-   Orders are delivered together in batches. The admin sets:
-     date    expected delivery date, 'YYYY-MM-DD' (e.g. a Saturday)
-     note    optional time / details, e.g. 'Between 10am and 4pm'
-     closes  optional last day to order for this batch, 'YYYY-MM-DD'
-     show    whether customers see the announcement
-   Same demo storage as Stock (this browser); with a backend,
-   replace load() / save() with a call to a `settings` table.
+   The admin opens one batch at a time:
+     number  Batch 1, 2, 3 …            date    expected delivery 'YYYY-MM-DD'
+     closes  last day to order (opt.)   note    e.g. 'Between 10am and 4pm' (opt.)
+     show    customers see the pop-up   status  'open' | 'closed'
+   An order placed while a batch is open (and before it closes) belongs to it.
+   An order placed after it closes, or when no batch is open, is tagged
+   "awaiting new batch" until the admin sends that customer the new date.
+   Demo storage: this browser. BACKEND: a `batches` table.
    ============================================================ */
 const Batch = (() => {
-  const KEY = 'dg-delivery-v1';
-  const DEFAULT = { date: '', note: '', closes: '', show: true };
+  const KEY = 'dg-batches-v1';
   let memory = null;
   const load = () => {
     if (memory) return memory;
-    try { memory = { ...DEFAULT, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch (e) { memory = { ...DEFAULT }; }
+    try { memory = JSON.parse(localStorage.getItem(KEY)) || { list: [] }; } catch (e) { memory = { list: [] }; }
+    if (!Array.isArray(memory.list)) memory.list = [];
     return memory;
   };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(memory)); } catch (e) {} };
+  const clone = v => JSON.parse(JSON.stringify(v));
 
   // 'YYYY-MM-DD' → a local date (no time-zone shift)
   const parse = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
@@ -126,31 +128,70 @@ const Batch = (() => {
     return d ? d.toLocaleDateString('en-GB', long ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'short', day: 'numeric', month: 'short' }) : '';
   };
 
-  const get = () => ({ ...load() });
-  const set = data => {
-    memory = { ...DEFAULT, ...data, show: data.show !== false };
-    save();
-    return get();
+  const all = () => clone(load().list);
+  const byId = id => clone(load().list.find(b => b.id === id) || null);
+  const open = () => clone(load().list.find(b => b.status === 'open') || null);
+  const label = b => (b ? `Batch ${b.number} · ${format(b.date, false)}` : '');
+
+  // still taking orders for this batch today?
+  const taking = b => !!b && parse(b.date) >= today() && (!b.closes || parse(b.closes) >= today());
+
+  const create = ({ date, closes = '', note = '', show = true }) => {
+    if (load().list.some(b => b.status === 'open')) throw new Error('Close the current batch first.');
+    const number = load().list.reduce((n, b) => Math.max(n, b.number), 0) + 1;
+    const b = { id: 'b' + Date.now().toString(36), number, date, closes, note: (note || '').trim(), show: show !== false, status: 'open', openedAt: new Date().toISOString() };
+    load().list.push(b); save();
+    return clone(b);
   };
 
-  // what customers should see right now
+  const update = (id, fields) => {
+    const b = load().list.find(x => x.id === id); if (!b) return null;
+    ['date', 'closes', 'note', 'show'].forEach(k => { if (k in fields) b[k] = k === 'note' ? (fields[k] || '').trim() : fields[k]; });
+    save(); return clone(b);
+  };
+
+  const close = id => {
+    const b = load().list.find(x => x.id === id); if (!b) return null;
+    b.status = 'closed'; b.closedAt = new Date().toISOString(); save();
+    return clone(b);
+  };
+
+  // sample history for the admin demo (only if there is none yet)
+  const seedIfEmpty = list => { if (!load().list.length) { memory = { list: clone(list) }; save(); } };
+
+  // which batch a new order belongs to
+  const assign = () => {
+    const b = load().list.find(x => x.status === 'open');
+    if (taking(b)) return { batchId: b.id, awaiting: false, text: format(b.date) + (b.note ? `, ${b.note}` : '') };
+    return { batchId: null, awaiting: true, text: 'Next batch: delivery date to be confirmed' };
+  };
+
+  // what customers see in the pop-up (null = nothing to show)
   const current = () => {
-    const b = load();
-    const date = parse(b.date);
-    if (!b.show || !date || date < today()) return null;          // nothing set, switched off, or the date has passed
-    const closes = parse(b.closes);
-    return {
-      date: b.date,
-      dateText: format(b.date),
-      shortDate: format(b.date, false),
-      note: (b.note || '').trim(),
-      closes: closes ? b.closes : '',
-      closesText: closes ? format(b.closes) : '',
-      closed: !!closes && closes < today()                        // past the last order day
-    };
+    const list = load().list; if (!list.length) return null;
+    const b = list.find(x => x.status === 'open');
+    if (b && !b.show) return null;
+    const base = b ? { batchId: b.id, number: b.number, date: b.date, dateText: format(b.date), shortDate: format(b.date, false), note: b.note || '',
+      closes: b.closes || '', closesText: b.closes ? format(b.closes) : '' } : { dateText: '', closesText: '', note: '' };
+    return { ...base, closed: !taking(b), hasOpen: !!b };
   };
 
   const onChange = fn => window.addEventListener('storage', e => { if (e.key === KEY) { memory = null; fn(); } });
 
-  return { get, set, current, format, parse, onChange };
+  return { all, byId, open, label, taking, create, update, close, seedIfEmpty, assign, current, format, parse, onChange };
+})();
+
+/* ============================================================
+   NEW ORDERS INBOX (demo) — orders placed in the shop show up in
+   the admin in the same browser. BACKEND: insert into `orders`.
+   ============================================================ */
+const ShopOrders = (() => {
+  const KEY = 'dg-shop-orders-v1';
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } };
+  const write = list => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} };
+  return {
+    add: order => { const list = read(); list.push(order); write(list); },
+    drain: () => { const list = read(); if (list.length) write([]); return list; },   // admin takes them in
+    onChange: fn => window.addEventListener('storage', e => { if (e.key === KEY && e.newValue && e.newValue !== '[]') fn(); })
+  };
 })();

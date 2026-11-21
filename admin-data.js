@@ -24,7 +24,7 @@
                   cancelled → cancelled
    ============================================================ */
 const AdminData = (() => {
-  const STORE_KEY = 'dg-admin-demo-v1';
+  const STORE_KEY = 'dg-admin-demo-v2';   // v2: orders carry their delivery batch
   const SESSION_KEY = 'dg-admin-session';
 
   // ⚠ DEMO SIGN-IN ONLY. A front-end password is not secure: real sign-in
@@ -42,9 +42,15 @@ const AdminData = (() => {
   /* ---------- storage (falls back to memory if the browser blocks it) ---------- */
   let memory = null;
   const load = () => {
-    if (memory) return memory;
-    try { const raw = localStorage.getItem(STORE_KEY); if (raw) memory = JSON.parse(raw); } catch (e) {}
-    if (!memory) { memory = seed(); save(); }
+    if (!memory) {
+      try { const raw = localStorage.getItem(STORE_KEY); if (raw) memory = JSON.parse(raw); } catch (e) {}
+      if (!memory) { memory = seed(); save(); }
+    }
+    // orders placed in the shop in this browser (demo inbox), checked on every read
+    if (typeof ShopOrders !== 'undefined') {
+      const fresh = ShopOrders.drain();
+      if (fresh.length) { memory.orders.unshift(...fresh.reverse()); save(); }
+    }
     return memory;
   };
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(memory)); } catch (e) {} };
@@ -133,6 +139,28 @@ const AdminData = (() => {
       if (status !== 'pending') o.history.push({ status: 'confirmed', at: new Date(t + 40 * 60000).toISOString() });
       if (status === 'out') o.history.push({ status: 'out', at: new Date(t + 3 * 3600000).toISOString() });
     });
+
+    // ---- delivery batches: every Saturday, orders close the Thursday before ----
+    const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const firstSat = new Date(today.getTime() - 119 * DAY); firstSat.setDate(firstSat.getDate() + ((6 - firstSat.getDay() + 7) % 7));
+    const batches = [];
+    for (let d = new Date(firstSat), n = 1; ; d = new Date(d.getTime() + 7 * DAY), n++) {
+      const closes = new Date(d.getTime() - 2 * DAY);
+      const isOpen = closes >= today;
+      batches.push({ id: 'sb' + n, number: n, date: iso(d), closes: iso(closes), note: 'Between 10am and 4pm', show: true,
+        status: isOpen ? 'open' : 'closed', openedAt: new Date(closes.getTime() - 6 * DAY).toISOString() });
+      if (isOpen) break;
+    }
+    // each order joins the batch whose ordering window it fell in
+    orders.forEach(o => {
+      const t = new Date(o.createdAt); t.setHours(0, 0, 0, 0);
+      const b = batches.find(x => Batch.parse(x.closes) >= t);
+      o.batchId = b ? b.id : null; o.awaitingBatch = false;
+    });
+    // two recent orders came in while no batch was open: they wait for the new date
+    orders.filter(o => o.status === 'pending').slice(-2).forEach(o => { o.batchId = null; o.awaitingBatch = true; });
+    if (typeof Batch !== 'undefined') Batch.seedIfEmpty(batches);
+
     return { products: productList, orders };
   }
 
@@ -173,6 +201,18 @@ const AdminData = (() => {
       if (!order) throw new Error('Order not found.');
       order.status = status;
       order.history.push({ status, at: new Date().toISOString() });
+      save();
+      return clone(order);
+    },
+
+    // customer was sent the delivery date on WhatsApp: a tagged order joins the open batch
+    async sendDate(orderId, batchId) {
+      await wait(80);
+      // BACKEND: update orders set batch_id = …, awaiting_batch = false; insert into order_status_history …
+      const order = load().orders.find(o => o.id === orderId);
+      if (!order) throw new Error('Order not found.');
+      if (order.awaitingBatch && batchId) { order.batchId = batchId; order.awaitingBatch = false; }
+      order.history.push({ status: 'date_sent', at: new Date().toISOString(), batchId: order.batchId });
       save();
       return clone(order);
     },
