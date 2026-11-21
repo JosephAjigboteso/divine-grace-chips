@@ -989,6 +989,19 @@
   .card-head { flex-wrap: wrap; }
 }
 
+/* "are you sure?" window */
+#confirmModal { z-index: 250; }
+.confirm-modal { width: min(400px, 100%); text-align: center; }
+.confirm-modal .modal-body { padding: 26px 24px 8px; }
+.confirm-modal h2 { font: 600 22px var(--font-display); color: var(--text); margin: 10px 0 6px; }
+.confirm-modal p { font-size: 14px; color: var(--text-muted); }
+.confirm-icon {
+  width: 52px; height: 52px; margin: 0 auto; display: grid; place-items: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--st-critical) 12%, var(--surface)); color: var(--st-critical); font-size: 20px;
+}
+.confirm-modal .drawer-foot .btn { flex: 1; min-width: 0; }
+.confirm-danger { border-color: color-mix(in srgb, var(--st-critical) 40%, var(--border)) !important; }
+
 /* ======================= products ======================= */
 .products-toolbar {
   display: flex;

@@ -264,6 +264,21 @@
     </form>
   </div>
 
+  <!-- "Are you sure?" window (browser confirm boxes are blocked in some viewers) -->
+  <div class="drawer-overlay modal-overlay" id="confirmModal" hidden>
+    <div class="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+      <div class="modal-body">
+        <span class="confirm-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>
+        <h2 id="confirmTitle"></h2>
+        <p id="confirmText"></p>
+      </div>
+      <footer class="drawer-foot">
+        <button type="button" class="btn btn-light" id="confirmNo">Keep it</button>
+        <button type="button" class="btn btn-primary" id="confirmYes"></button>
+      </footer>
+    </div>
+  </div>
+
   <div class="chart-tooltip" id="chartTooltip" role="status" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 

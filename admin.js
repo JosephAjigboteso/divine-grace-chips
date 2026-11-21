@@ -55,6 +55,28 @@
   const waLink = (o, text) => `https://wa.me/${'234' + o.customer.phone.replace(/\D/g, '').replace(/^234/, '').replace(/^0/, '')}?text=${encodeURIComponent(text)}`;
   let range = 30;
 
+  /* ======================= confirmation window ======================= */
+  // returns a Promise<boolean>; used instead of the browser's confirm()
+  const askConfirm = ({ title, text, yes, danger = false }) => new Promise(resolve => {
+    const ov = $('confirmModal'), back = document.activeElement;
+    $('confirmTitle').textContent = title;
+    $('confirmText').textContent = text;
+    $('confirmYes').textContent = yes;
+    $('confirmYes').className = danger ? 'btn btn-light danger-btn confirm-danger' : 'btn btn-primary';
+    ov.hidden = false; requestAnimationFrame(() => ov.classList.add('is-open'));
+    $('confirmNo').focus({ preventScroll: true });
+    const done = answer => {
+      ov.classList.remove('is-open'); setTimeout(() => { ov.hidden = true; }, 200);
+      $('confirmYes').onclick = $('confirmNo').onclick = ov.onclick = ov.onkeydown = null;
+      if (back && back.focus) back.focus({ preventScroll: true });
+      resolve(answer);
+    };
+    $('confirmYes').onclick = () => done(true);
+    $('confirmNo').onclick = () => done(false);
+    ov.onclick = e => { if (e.target === ov) done(false); };
+    ov.onkeydown = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+  });
+
   /* ======================= toast ======================= */
   let toastTimer;
   const toast = (text, tone = 'good') => {
@@ -565,7 +587,7 @@
   $('drawerActions').addEventListener('click', async e => {
     const b = e.target.closest('[data-set-status]'); if (!b || !openId) return;
     const status = b.dataset.setStatus;
-    if (status === 'cancelled' && !confirm('Cancel this order?')) return;
+    if (status === 'cancelled' && !(await askConfirm({ title: 'Cancel this order?', text: 'The customer’s order will be marked as cancelled.', yes: 'Cancel order', danger: true }))) return;
     b.disabled = true;
     const updated = await AdminData.updateOrderStatus(openId, status);
     orders = orders.map(o => (o.id === updated.id ? updated : o));
@@ -675,9 +697,9 @@
     renderBatchCard(); renderOrders();
   });
 
-  $('bClose').addEventListener('click', () => {
+  $('bClose').addEventListener('click', async () => {
     const open = Batch.open(); if (!open) return;
-    if (!confirm(`Close Batch ${open.number}? New orders will be tagged “New batch” until you open the next batch.`)) return;
+    if (!(await askConfirm({ title: `Close Batch ${open.number}?`, text: 'New orders will be tagged “New batch” until you open the next batch and send them the date.', yes: 'Close batch', danger: true }))) return;
     Batch.close(open.id);                                               // BACKEND: update batches set status = 'closed'
     batchMode = 'none';
     renderBatchCard(); renderOrders();
@@ -860,6 +882,7 @@
   /* ======================= shared keyboard ======================= */
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
+    if (!$('confirmModal').hidden) return;
     if (!$('orderDrawer').hidden) closeDrawer();
     else if (!$('productModal').hidden) closeModal();
   });
