@@ -506,29 +506,93 @@
   });
 
   /* ======================= products ======================= */
+  /* Stock (stock.js) decides what customers can order:
+     Fully available · Limited quantity (packs left per type) · Unavailable,
+     and for plantain products: Ripe & Unripe / Ripe only / Unripe only. */
+  const STATUS_OPTS = [['full', 'Fully available'], ['limited', 'Limited quantity'], ['out', 'Unavailable']];
+  const TYPE_OPTS = [['both', 'Ripe & Unripe'], ['Ripe', 'Ripe only'], ['Unripe', 'Unripe only']];
+
+  const stockSummary = (p, st) => {
+    if (st.status === 'out') return { text: 'Unavailable', tone: 'critical' };
+    const types = Stock.hasTypes(p) ? (st.types === 'both' ? ['Ripe', 'Unripe'] : [st.types]) : [''];
+    let text = st.status === 'full' ? 'Fully available' : `${types.reduce((n, t) => n + (st.qty[t] || 0), 0)} left`;
+    if (st.status === 'limited' && types.every(t => !(st.qty[t] > 0))) return { text: 'Sold out (0 left)', tone: 'critical' };
+    // say "… only" when just one type can still be ordered (chosen, or the other has run out)
+    const orderable = st.status === 'limited' ? types.filter(t => st.qty[t] > 0) : types;
+    if (Stock.hasTypes(p) && orderable.length === 1) text += ` · ${orderable[0]} only`;
+    return { text, tone: st.status === 'full' ? 'good' : 'warning' };
+  };
+
+  const seg = (name, opts, value, label) => `
+    <fieldset class="pa-seg">
+      <legend>${label}</legend>
+      <div class="pa-seg-opts">${opts.map(([v, t]) => `
+        <label><input type="radio" name="${name}" value="${v}"${v === value ? ' checked' : ''}><span>${t}</span></label>`).join('')}
+      </div>
+    </fieldset>`;
+
+  // the stock controls for one product, drawn from a (possibly unsaved) state
+  const stockPanel = (p, st) => {
+    const types = Stock.hasTypes(p) ? (st.types === 'both' ? ['Ripe', 'Unripe'] : [st.types]) : [''];
+    return `
+      ${seg(`status-${p.id}`, STATUS_OPTS, st.status, 'Availability')}
+      ${Stock.hasTypes(p) && st.status !== 'out' ? seg(`types-${p.id}`, TYPE_OPTS, st.types, 'Ripe / Unripe') : ''}
+      ${st.status === 'limited' ? `
+        <div class="pa-qty">${types.map(t => `
+          <label class="pa-field"><span>${t ? `${t} packs left` : 'Packs left'}</span>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${st.qty[t] ?? ''}" placeholder="0" data-qty="${t}"></label>`).join('')}
+        </div>` : ''}`;
+  };
+
+  const readStock = row => {
+    const id = row.dataset.id;
+    const st = Stock.get(id);
+    const status = (row.querySelector(`[name="status-${id}"]:checked`) || {}).value || st.status;
+    const types = (row.querySelector(`[name="types-${id}"]:checked`) || {}).value || st.types;
+    const qty = { ...st.qty };
+    row.querySelectorAll('[data-qty]').forEach(i => { qty[i.dataset.qty] = i.value === '' ? 0 : Math.max(0, Math.floor(Number(i.value) || 0)); });
+    return { status, types, qty };
+  };
+
   function renderProducts() {
-    $('productList').innerHTML = productsData.map(p => `
-      <article class="pa-row${p.available ? '' : ' is-hidden'}" data-id="${esc(p.id)}">
+    $('productList').innerHTML = productsData.map(p => {
+      const st = Stock.get(p.id);
+      const sum = stockSummary(p, st);
+      return `
+      <article class="pa-row stock-${st.status}" data-id="${esc(p.id)}">
         <div class="pa-photo">${p.image ? `<img src="${esc(p.image)}" alt="">` : '<i class="fa-regular fa-image" aria-hidden="true"></i>'}</div>
         <div class="pa-info">
           <strong>${esc(p.name)}</strong>
           <span>${p.group === 'jar' ? 'Jars & refills' : 'Sachets & everyday snacks'}</span>
+          <em class="pa-stock-pill tone-${sum.tone}">${esc(sum.text)}</em>
         </div>
         <label class="pa-field pa-price"><span>Price (₦)</span><input type="number" min="0" step="50" value="${Number(p.price)}" data-key="price"></label>
         <label class="pa-field pa-weight"><span>Weight</span><input type="text" value="${esc(p.weight)}" placeholder="e.g. 250 g" data-key="weight"></label>
-        <label class="switch" title="Show this product on the website">
-          <input type="checkbox" data-key="available"${p.available ? ' checked' : ''}>
-          <span class="switch-track" aria-hidden="true"></span>
-          <span class="switch-label">${p.available ? 'Available' : 'Hidden'}</span>
-        </label>
         <button type="button" class="btn btn-primary pa-save" hidden>Save</button>
-      </article>`).join('');
+        <div class="pa-stock">${stockPanel(p, st)}</div>
+      </article>`;
+    }).join('');
   }
 
+  // an order in the shop (another tab) changed the stock: refresh, unless you're mid-edit
+  Stock.onChange(() => { if (!document.querySelector('.pa-row.is-dirty')) renderProducts(); });
+
+  const markDirty = row => { row.querySelector('.pa-save').hidden = false; row.classList.add('is-dirty'); };
+
   $('productList').addEventListener('input', e => {
-    const row = e.target.closest('.pa-row'); if (!row) return;
-    row.querySelector('.pa-save').hidden = false; row.classList.add('is-dirty');
-    if (e.target.dataset.key === 'available') row.querySelector('.switch-label').textContent = e.target.checked ? 'Available' : 'Hidden';
+    const row = e.target.closest('.pa-row'); if (row) markDirty(row);
+  });
+
+  // switching availability or ripe/unripe redraws that row's stock controls
+  $('productList').addEventListener('change', e => {
+    if (e.target.type !== 'radio') return;
+    const row = e.target.closest('.pa-row');
+    const p = productsData.find(x => x.id === row.dataset.id);
+    const st = readStock(row);
+    row.querySelector('.pa-stock').innerHTML = stockPanel(p, st);
+    const again = row.querySelector(`[name="${e.target.name}"][value="${e.target.value}"]`);
+    if (again) again.focus();
+    markDirty(row);
   });
 
   $('productList').addEventListener('click', async e => {
@@ -537,13 +601,18 @@
     const p = productsData.find(x => x.id === row.dataset.id);
     const price = Number(row.querySelector('[data-key="price"]').value);
     if (!(price > 0)) { toast('Enter a price above ₦0.', 'bad'); return; }
-    const changes = { id: p.id, price, weight: row.querySelector('[data-key="weight"]').value.trim(), available: row.querySelector('[data-key="available"]').checked };
+    const st = readStock(row);
+    if (st.status === 'limited') {
+      const types = Stock.hasTypes(p) ? (st.types === 'both' ? ['Ripe', 'Unripe'] : [st.types]) : [''];
+      if (types.every(t => !(st.qty[t] > 0))) { toast('Enter how many packs are left, or choose Unavailable.', 'bad'); return; }
+    }
     btn.disabled = true;
-    const saved = await AdminData.saveProduct(changes);
+    const saved = await AdminData.saveProduct({ id: p.id, price, weight: row.querySelector('[data-key="weight"]').value.trim() });
     Object.assign(p, saved);
-    btn.hidden = true; btn.disabled = false; row.classList.remove('is-dirty');
-    row.classList.toggle('is-hidden', !p.available);
-    toast(`${p.name} saved`);
+    Stock.set(p.id, st);                                   // BACKEND: save to the stock table
+    btn.disabled = false;
+    renderProducts();
+    toast(`${p.name} saved: ${stockSummary(p, Stock.get(p.id)).text}`);
   });
 
   // add product
@@ -575,7 +644,7 @@
     const msg = $('productFormMsg');
     if (!name || !(price > 0)) { msg.className = 'form-message error'; msg.textContent = 'Add a name and a price above ₦0.'; return; }
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36).slice(-4);
-    const product = { id, name, price, group: $('pGroup').value, weight: $('pWeight').value.trim(), desc: $('pDesc').value.trim(), image: photoPreview.length < 300000 ? photoPreview : '', available: true };
+    const product = { id, name, price, group: $('pGroup').value, weight: $('pWeight').value.trim(), desc: $('pDesc').value.trim(), image: photoPreview.length < 300000 ? photoPreview : '' };
     const saved = await AdminData.saveProduct(product);
     productsData.push(saved); renderProducts(); closeModal();
     toast(`${name} added`);

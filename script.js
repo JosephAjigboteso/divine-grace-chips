@@ -214,13 +214,18 @@ products.forEach((p, i) => {
 const money = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
 
 /* ---------- PRODUCT CARD TEMPLATE ---------- */
-const card = p => `
-  <article class="product-card">
+const hasStock = () => typeof Stock !== 'undefined';
+const card = p => {
+  const badge = hasStock() ? Stock.label(p) : null;
+  const soldOut = hasStock() && Stock.soldOut(p);
+  return `
+  <article class="product-card${soldOut ? ' is-sold-out' : ''}">
     <div class="product-image">
       <button class="image-viewer-trigger" type="button" data-product="${p.id}" aria-label="View details and photos of ${p.name}" aria-haspopup="dialog">
         <img src="${p.image}" alt="${p.name}" loading="lazy">
         <span class="quick-view" aria-hidden="true"><i class="fa-solid fa-expand"></i> View details</span>
       </button>
+      ${badge ? `<span class="stock-badge tone-${badge.tone}">${badge.text}</span>` : ''}
     </div>
     <div class="product-body">
       <div class="product-title-row">
@@ -228,12 +233,15 @@ const card = p => `
         <span class="price">${money.format(p.price)}</span>
       </div>
       <p>${p.desc}</p>
-      <a class="btn btn-primary order-btn" href="order.html?product=${encodeURIComponent(p.id)}">
+      ${soldOut
+        ? `<span class="btn btn-light order-btn is-disabled" aria-disabled="true"><i class="fa-solid fa-ban" aria-hidden="true"></i> Sold out</span>`
+        : `<a class="btn btn-primary order-btn" href="order.html?product=${encodeURIComponent(p.id)}">
         Order this pack <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-      </a>
+      </a>`}
     </div>
   </article>
 `;
+};
 
 /* ---------- RENDER PRODUCTS ---------- */
 function renderProducts() {
@@ -242,6 +250,8 @@ function renderProducts() {
   if (a) a.innerHTML = products.filter(p => p.group === 'sachet').map(card).join('');
   if (b) b.innerHTML = products.filter(p => p.group === 'jar').map(card).join('');
 }
+// redraw the cards if the stock changes in another tab (e.g. the admin)
+if (typeof Stock !== 'undefined') Stock.onChange(() => renderProducts());
 
 /* ---------- ORDER PAGE ---------- */
 function setupOrderPage() {
@@ -268,43 +278,54 @@ function setupOrderPage() {
   let cart = [];
   const find = id => products.find(p => p.id === id);
   const hasType = product => !/potato/i.test(product.name);   // plantain products come ripe or unripe
+  // stock rules (stock.js): which types can be ordered and how many are left
+  const typesOk = p => (hasStock() ? Stock.orderableTypes(p) : (hasType(p) ? ['Ripe', 'Unripe'] : ['']));
+  const maxFor = line => Math.min(MAX_QTY, hasStock() ? Stock.left(find(line.id), line.type) : MAX_QTY);
   const lineTotal = line => find(line.id).price * line.qty;
   const orderTotal = () => cart.reduce((sum, line) => sum + lineTotal(line), 0);
 
   // A product chosen on the products page (order.html?product=big-jar) starts the order
   const start = find(new URLSearchParams(location.search).get('product'));
-  if (start) cart.push({ id: start.id, qty: 1, type: hasType(start) ? 'Ripe' : '' });
+  const emptyText = empty.querySelector('span:not(.order-empty-icon)');
+  if (start && typesOk(start).length) cart.push({ id: start.id, qty: 1, type: typesOk(start)[0] });
+  else if (start && emptyText) emptyText.textContent = `Sorry, ${start.name} is sold out right now. Please choose another product.`;
 
   /* product picker */
-  options.innerHTML = products.map(p => `
-    <button type="button" class="product-option" data-id="${p.id}">
-      <img src="${p.image}" alt="">
-      <span>${p.name}<small>${money.format(p.price)}</small></span>
-      <i class="fa-solid fa-circle-check product-option-check" aria-hidden="true"></i>
-    </button>`).join('');
+  const drawOptions = () => {
+    options.innerHTML = products.map(p => {
+      const out = !typesOk(p).length;
+      const badge = hasStock() ? Stock.label(p) : null;
+      return `
+      <button type="button" class="product-option${out ? ' is-sold-out' : ''}" data-id="${p.id}"${out ? ' disabled aria-disabled="true"' : ''}>
+        <img src="${p.image}" alt="">
+        <span>${p.name}<small>${out ? 'Sold out' : money.format(p.price) + (badge ? ` · ${badge.text}` : '')}</small></span>
+        <i class="fa-solid fa-circle-check product-option-check" aria-hidden="true"></i>
+      </button>`;
+    }).join('');
+  };
+  drawOptions();
 
   /* Each order line is a product + its type, so the same pack can be
      ordered ripe AND unripe as two separate lines. */
   const addProduct = id => {
     const product = find(id);
-    if (!hasType(product)) {                                  // potato: one line, just add one
-      const line = cart.find(l => l.id === id);
-      if (line) line.qty = Math.min(MAX_QTY, line.qty + 1);
-      else cart.push({ id, qty: 1, type: '' });
-      return;
-    }
+    const types = typesOk(product);                           // only types in stock
+    if (!types.length) return;
     const lines = cart.filter(l => l.id === id);
-    const missing = ['Ripe', 'Unripe'].find(t => !lines.some(l => l.type === t));
-    if (missing) cart.push({ id, qty: 1, type: missing });   // add the type not in the order yet
-    else lines[lines.length - 1].qty = Math.min(MAX_QTY, lines[lines.length - 1].qty + 1);
+    const missing = types.find(t => !lines.some(l => l.type === t));
+    if (missing !== undefined) { cart.push({ id, qty: 1, type: missing }); return; }   // add a type not in the order yet
+    const room = lines.find(l => l.qty < maxFor(l));          // otherwise one more where stock allows
+    if (room) room.qty += 1;
+    else stockNote = `That’s all the ${product.name} we have left right now.`;
   };
+  let stockNote = '';
 
   // two lines with the same product and type become one
   const mergeDuplicates = () => {
     const merged = [];
     cart.forEach(line => {
       const same = merged.find(l => l.id === line.id && l.type === line.type);
-      if (same) same.qty = Math.min(MAX_QTY, same.qty + line.qty);
+      if (same) same.qty = Math.min(maxFor(same), same.qty + line.qty);
       else merged.push(line);
     });
     cart = merged;
@@ -338,13 +359,15 @@ function setupOrderPage() {
     if (!line) return;
     if (btn.dataset.action === 'remove') cart.splice(i, 1);
     if (btn.dataset.action === 'minus') line.qty = Math.max(1, line.qty - 1);
-    if (btn.dataset.action === 'plus') line.qty = Math.min(MAX_QTY, line.qty + 1);
+    if (btn.dataset.action === 'plus') line.qty = Math.min(maxFor(line), line.qty + 1);
     render();
   });
 
   itemsEl.addEventListener('change', e => {
     if (!e.target.matches('select[data-action="type"]')) return;
-    cart[Number(e.target.closest('[data-index]').dataset.index)].type = e.target.value;
+    const line = cart[Number(e.target.closest('[data-index]').dataset.index)];
+    line.type = e.target.value;
+    line.qty = Math.max(1, Math.min(line.qty, maxFor(line)));
     mergeDuplicates();
     render();
   });
@@ -360,12 +383,15 @@ function setupOrderPage() {
 
     itemsEl.innerHTML = cart.map((line, i) => {
       const p = find(line.id);
+      const max = maxFor(line);
+      const types = typesOk(p);
+      if (line.type && !types.includes(line.type)) types.push(line.type);   // keep the chosen type listed
       return `
         <li class="order-item" data-index="${i}">
           <img class="order-item-img" src="${p.image}" alt="">
           <div class="order-item-info">
             <strong>${p.name}${line.type && cart.filter(l => l.id === line.id).length > 1 ? ` <em class="order-item-tag">${line.type}</em>` : ''}</strong>
-            <span>${money.format(p.price)} each</span>
+            <span>${money.format(p.price)} each${max < MAX_QTY ? ` · <b class="order-item-left">${max} left</b>` : ''}</span>
           </div>
           <button type="button" class="order-item-remove" data-action="remove" aria-label="Remove ${p.name}">
             <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
@@ -374,13 +400,12 @@ function setupOrderPage() {
             <div class="quantity-control" role="group" aria-label="Quantity of ${p.name}">
               <button type="button" data-action="minus" aria-label="Decrease quantity"${line.qty <= 1 ? ' disabled' : ''}>−</button>
               <strong>${line.qty}</strong>
-              <button type="button" data-action="plus" aria-label="Increase quantity"${line.qty >= MAX_QTY ? ' disabled' : ''}>+</button>
+              <button type="button" data-action="plus" aria-label="Increase quantity"${line.qty >= max ? ' disabled' : ''}>+</button>
             </div>
-            ${hasType(p) ? `
+            ${hasType(p) ? (types.length > 1 ? `
             <select class="order-item-type" data-action="type" aria-label="Plantain type for ${p.name}">
-              <option value="Ripe"${line.type === 'Ripe' ? ' selected' : ''}>Ripe</option>
-              <option value="Unripe"${line.type === 'Unripe' ? ' selected' : ''}>Unripe</option>
-            </select>` : '<span></span>'}
+              ${types.map(t => `<option value="${t}"${line.type === t ? ' selected' : ''}>${t}</option>`).join('')}
+            </select>` : `<span class="order-item-only">${line.type} only</span>`) : '<span></span>'}
             <span class="order-item-total">${money.format(lineTotal(line))}</span>
           </div>
         </li>`;
@@ -390,6 +415,8 @@ function setupOrderPage() {
     options.querySelectorAll('.product-option').forEach(b => {
       b.classList.toggle('is-in-order', cart.some(l => l.id === b.dataset.id));
     });
+
+    if (stockNote) { showError(stockNote); stockNote = ''; }
 
     const count = cart.reduce((n, l) => n + l.qty, 0);
     totalEl.textContent = money.format(orderTotal());
@@ -532,6 +559,18 @@ function setupOrderPage() {
     }
 
     // phone: our own check; then the browser checks the other required fields
+    // stock may have changed since the page opened
+    if (hasStock()) {
+      const short = cart.filter(l => l.qty > Stock.left(find(l.id), l.type));
+      if (short.length) {
+        cart = cart.filter(l => Stock.left(find(l.id), l.type) > 0).map(l => ({ ...l, qty: Math.min(l.qty, maxFor(l)) }));
+        render(); drawOptions();
+        showError(`Sorry, stock changed: ${short.map(l => find(l.id).name).join(', ')} ${short.length > 1 ? 'were' : 'was'} updated. Please check your order.`);
+        summary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+    }
+
     if (!checkPhone(true)) {
       showError('Please check your phone number.');
       phone.focus();
@@ -599,9 +638,11 @@ function setupOrderPage() {
       pay.step.hidden = true; pay.done.hidden = false;
       pay.finish.focus({ preventScroll: true });
 
+      if (hasStock()) Stock.take(cart, products);   // packs leave limited stock
       form.reset();
       syncLocation();
       cart = [];
+      drawOptions();
       reference = '';
       history.replaceState(null, '', location.pathname);   // drop ?product= from the address
       render();
@@ -615,6 +656,13 @@ function setupOrderPage() {
       pay.confirm.innerHTML = idle;
     }
   });
+
+  // stock changed in another tab (e.g. the admin): refresh the lists
+  if (hasStock()) Stock.onChange(() => {
+    cart = cart.filter(l => Stock.left(find(l.id), l.type) > 0).map(l => ({ ...l, qty: Math.min(l.qty, maxFor(l)) }));
+    drawOptions(); render();
+  });
+
   render();
 }
 
@@ -1073,8 +1121,20 @@ function setupProductImageViewer() {
     if (product.weight) specs.push(['Weight', product.weight]);
     if (!/potato/i.test(product.name)) {
       specs.push(['Ingredients', 'Plantain, vegetable oil, chilli pepper, salt']);   // from the pack label
-      specs.push(['Plantain', 'Ripe or unripe — choose when ordering']);
+      const types = hasStock() ? Stock.orderableTypes(product) : ['Ripe', 'Unripe'];
+      specs.push(['Plantain', types.length === 2 ? 'Ripe or unripe — choose when ordering' : types.length ? `${types[0]} only right now` : '—']);
     }
+    if (hasStock()) {
+      const badge = Stock.label(product);
+      specs.unshift(['Availability', Stock.soldOut(product) ? 'Sold out' : badge && /left/.test(badge.text) ? badge.text.split(' · ')[0] : 'In stock']);
+    }
+    const soldOut = hasStock() && Stock.soldOut(product);
+    const orderBtn = $('.pv-order');
+    orderBtn.classList.toggle('is-disabled', soldOut);
+    orderBtn.classList.toggle('btn-primary', !soldOut);
+    orderBtn.classList.toggle('btn-light', soldOut);
+    if (soldOut) { orderBtn.removeAttribute('href'); orderBtn.setAttribute('aria-disabled', 'true'); orderBtn.innerHTML = '<i class="fa-solid fa-ban" aria-hidden="true"></i> Sold out'; }
+    else { orderBtn.removeAttribute('aria-disabled'); orderBtn.innerHTML = 'Order this pack <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>'; }
     $('.pv-specs').innerHTML = specs.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
 
     track.style.transition = 'none'; go(0); void track.offsetWidth; track.style.transition = '';
@@ -1090,10 +1150,13 @@ function setupProductImageViewer() {
     if (lastTrigger) lastTrigger.focus({ preventScroll: true });
   };
 
-  triggers.forEach(trigger => trigger.addEventListener('click', () => {
+  // listen on the page, so cards redrawn after a stock change still open
+  document.addEventListener('click', e => {
+    const trigger = e.target.closest('.image-viewer-trigger');
+    if (!trigger) return;
     const product = products.find(p => p.id === trigger.dataset.product);
     if (product) open(product, trigger);
-  }));
+  });
 
   prev.addEventListener('click', () => go(index - 1));
   next.addEventListener('click', () => go(index + 1));

@@ -72,7 +72,7 @@
         <button type="button" class="admin-nav-link" data-view="products"><i class="fa-solid fa-cookie-bite" aria-hidden="true"></i><span>Products</span></button>
       </nav>
       <div class="admin-sidebar-foot">
-        <a class="admin-side-link" href="index.html" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span>View website</span></a>
+        <a class="admin-side-link" href="index.html"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span>View website</span></a>
         <button type="button" class="admin-side-link theme-toggle" aria-label="Toggle dark mode"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Theme</span></button>
         <button type="button" class="admin-side-link" id="signOut"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
       </div>
@@ -167,7 +167,7 @@
       <!-- ===== PRODUCTS ===== -->
       <section class="admin-view" data-view="products" hidden>
         <div class="products-toolbar">
-          <p class="products-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Hidden products can't be ordered on the website. Changes to price and weight apply to new orders.</p>
+          <p class="products-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Availability controls what customers can order: <strong>Unavailable</strong> products show as sold out, and <strong>Limited</strong> stock goes down as orders come in. Demo: changes apply to the shop in this browser only, until the backend is connected.</p>
           <button type="button" class="btn btn-primary" id="addProductBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add product</button>
         </div>
         <div class="product-admin-list" id="productList"></div>
@@ -225,6 +225,7 @@
   <div class="chart-tooltip" id="chartTooltip" role="status" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+  <script src="stock.js"></script>
   <script src="script.js"></script>
   <script src="admin-data.js"></script>
   <script src="admin.js"></script>
