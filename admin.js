@@ -588,10 +588,12 @@
     const state = $('batchState');
     const cur = Batch.current();
     if (batchMode === 'none') {
-      state.className = 'batch-state is-off'; state.textContent = 'No batch open';
       $('batchHeading').textContent = 'Delivery batch';
       const n = waitingCount();
-      $('batchNoneText').innerHTML = `Customers can still order: new orders are tagged <span class="batch-tag"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> New batch</span> until you open the next batch and send them the date.${n ? ` <strong>${n} order${n === 1 ? ' is' : 's are'} waiting.</strong>` : ''}`;
+      $('batchNoneNote').innerHTML = n
+        ? `<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span><strong>${n} order${n === 1 ? '' : 's'}</strong> ${n === 1 ? 'is' : 'are'} waiting for a delivery date.</span><button type="button" class="link-btn" data-goto-awaiting>Send dates</button>`
+        : '<i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>No batch is open. New orders will wait for the next batch.</span>';
+      $('batchNoneNote').classList.toggle('is-calm', !n);
     } else if (batchMode === 'new') {
       state.className = 'batch-state is-new'; state.textContent = 'New batch';
       const next = Batch.all().reduce((m, x) => Math.max(m, x.number), 0) + 1;
@@ -602,6 +604,9 @@
       $('batchHeading').textContent = `Batch ${open.number} is open`;
     }
     $('batchNone').hidden = batchMode !== 'none';
+    $('batchSub').hidden = batchMode === 'none';
+    state.hidden = batchMode === 'none';
+    $('batchCard').classList.toggle('is-none', batchMode === 'none');
     $('batchForm').hidden = batchMode === 'none';
     $('bCancel').hidden = batchMode !== 'new';
     $('bClose').hidden = batchMode !== 'open';

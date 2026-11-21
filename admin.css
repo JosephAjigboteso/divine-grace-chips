@@ -863,23 +863,21 @@
 .batch-state.is-closed::before { background: var(--st-warning); }
 .batch-state.is-new::before { background: var(--primary); }
 
+/* no batch open: just the waiting-orders notice and the Start new batch button */
 .batch-none {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  border: 1px dashed var(--border-strong);
-  background: var(--background-soft);
-  font-size: 13.5px;
-  color: var(--text-muted);
+  display: grid;
+  gap: 12px;
 }
 
+.batch-card.is-none .card-head { margin-bottom: 12px; }
+.batch-card.is-none #batchSub[hidden], .batch-state[hidden] { display: none; }
+.batch-none-note { margin-top: 0; }
+.batch-none-note.is-calm { background: var(--surface-alt); }
+.batch-none-note.is-calm > i { color: var(--text-muted); }
+.batch-none .btn { justify-self: start; }
+@media (max-width: 560px) { .batch-none .btn { justify-self: stretch; justify-content: center; } }
+
 .batch-none[hidden], #batchForm[hidden] { display: none; }
-.batch-none p { flex: 1; min-width: 240px; line-height: 1.7; }
-.batch-none strong { color: var(--text); }
 
 .batch-reset-note,
 .batch-waiting {
