@@ -251,9 +251,11 @@
         </div>
         <div class="field"><label for="pDesc">Description</label><textarea id="pDesc" rows="3" placeholder="One or two sentences shown on the product card"></textarea></div>
         <div class="field">
-          <label for="pPhoto">Main photo</label>
-          <input id="pPhoto" type="file" accept="image/*">
-          <small class="field-hint">Preview only for now: photo uploads will be saved once the backend is connected.</small>
+          <span class="field-label" id="pPhotosLabel">Photos</span>
+          <div class="photo-grid" id="pPhotos" aria-labelledby="pPhotosLabel"></div>
+          <input id="pPhoto" class="visually-hidden" type="file" accept="image/*" multiple>
+          <label class="photo-check"><input type="checkbox" id="pWhiten" checked> Make plain backgrounds white</label>
+          <small class="field-hint">Photos are resized and saved as small WebP files automatically. The first photo is the main one; customers swipe through the rest.</small>
         </div>
         <div class="form-message" id="productFormMsg" role="alert"></div>
       </div>

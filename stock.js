@@ -195,3 +195,27 @@ const ShopOrders = (() => {
     onChange: fn => window.addEventListener('storage', e => { if (e.key === KEY && e.newValue && e.newValue !== '[]') fn(); })
   };
 })();
+
+/* ============================================================
+   PRODUCT CATALOGUE — the list of products the shop sells
+   ------------------------------------------------------------
+   The admin adds, edits and deletes products here; the shop reads it.
+   Each product: { id, name, price, group, weight, desc,
+                   photos: [image addresses, first = main],
+                   placeholders: true/false (top up the slider with stand-in photos) }
+   Until the admin changes something, the shop uses the built-in list
+   in script.js. Demo storage: this browser (photos are saved inside it,
+   so space is limited). BACKEND: a `products` table + photo storage.
+   ============================================================ */
+const Catalog = (() => {
+  const KEY = 'dg-catalog-v1';
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
+  return {
+    // the saved list, or the built-in one if the admin hasn't changed anything
+    list: defaults => JSON.parse(JSON.stringify(read() || defaults || [])),
+    // returns false when the browser has no room left (photos are large)
+    saveAll: list => { try { localStorage.setItem(KEY, JSON.stringify(list)); return true; } catch (e) { return false; } },
+    isCustom: () => !!read(),
+    onChange: fn => window.addEventListener('storage', e => { if (e.key === KEY) fn(); })
+  };
+})();

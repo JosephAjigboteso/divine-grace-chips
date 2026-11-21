@@ -186,7 +186,7 @@ const PRODUCT_PHOTO_DIR = 'asset/products/';
 const PLACEHOLDER_PHOTOS = ['_placeholder/range-studio.jpg', '_placeholder/range-outdoor.jpg', '_placeholder/lifestyle-picnic.jpg'];
 const MIN_SLIDER_PHOTOS = 3;   // top up with placeholders until the slider has this many
 
-const products = [
+const DEFAULT_PRODUCTS = [
   { id: 'ziploc',         name: 'Ziploc',                 price: 1000, group: 'sachet', weight: '100 g',      photos: ['1.webp'], desc: 'A convenient, crunchy pack for a quick snack or little treat.' },
   { id: 'refill-2000',    name: 'Refill Pack 2k',         price: 2000, group: 'sachet', weight: '250 g',      photos: ['1.webp'], desc: 'Light, crispy and satisfying — perfect to keep stocked.' },
   { id: 'plantain-dozen', name: 'Plantain Chips — Dozen', price: 3000, group: 'sachet', weight: '12 × 50 g',  photos: ['1.webp'], desc: 'A generous plantain option for sharing, events and resellers.' },
@@ -196,20 +196,23 @@ const products = [
   { id: 'big-jar',        name: 'Big Jar',                price: 5500, group: 'jar',    weight: '900 g',      photos: ['1.webp'], desc: 'A generous jar for homes, offices, parties and serious snackers.' },
   { id: 'refill-6000',    name: 'Refill Pack 6k',         price: 6000, group: 'jar',    weight: '1 kg',       photos: ['1.webp'], desc: 'A large refill option for bigger orders and regular customers.' }
 ];
+DEFAULT_PRODUCTS.forEach(p => { p.photos = p.photos.map(f => (f.includes('/') ? f : `${PRODUCT_PHOTO_DIR}${p.id}/${f}`)); });
 
-/* Build each product's photo paths from its folder (no need to edit this) */
-products.forEach((p, i) => {
-  const own = (p.photos || []).map(f => (f.includes('/') ? f : `${p.id}/${f}`));
+/* The products the shop shows: the admin's catalogue if it has one, otherwise the list above.
+   Each product gets `images` (all slider photos) and `image` (the main one). No need to edit this. */
+const buildProducts = list => list.map((p, i) => {
+  const own = (p.photos || []).slice();
   const extra = [];
-  if (p.placeholders !== false) {
+  if (p.placeholders !== false || !own.length) {
     // rotate the stand-ins so neighbouring products don't all start with the same one
     for (let k = 0; own.length + extra.length < MIN_SLIDER_PHOTOS && k < PLACEHOLDER_PHOTOS.length; k++) {
-      extra.push(PLACEHOLDER_PHOTOS[(i + k) % PLACEHOLDER_PHOTOS.length]);
+      extra.push(PRODUCT_PHOTO_DIR + PLACEHOLDER_PHOTOS[(i + k) % PLACEHOLDER_PHOTOS.length]);
     }
   }
-  p.images = [...own, ...extra].map(f => PRODUCT_PHOTO_DIR + f);
-  p.image = p.images[0];   // main photo
+  const images = [...own, ...extra];
+  return { ...p, images, image: images[0] };
 });
+let products = buildProducts(typeof Catalog !== 'undefined' ? Catalog.list(DEFAULT_PRODUCTS) : DEFAULT_PRODUCTS);
 
 const money = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 });
 
@@ -252,6 +255,7 @@ function renderProducts() {
 }
 // redraw the cards if the stock changes in another tab (e.g. the admin)
 if (typeof Stock !== 'undefined') Stock.onChange(() => renderProducts());
+if (typeof Catalog !== 'undefined') Catalog.onChange(() => { products = buildProducts(Catalog.list(DEFAULT_PRODUCTS)); renderProducts(); });
 
 /* ---------- ORDER PAGE ---------- */
 function setupOrderPage() {
@@ -1173,11 +1177,11 @@ function setupProductImageViewer() {
     dialog.classList.toggle('is-single', single);
 
     track.innerHTML = photos.map((src, i) => `
-      <div class="pv-slide${/\.(png|webp)$/i.test(src) ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
+      <div class="pv-slide${/\.(png|webp)$|^data:image\//i.test(src) ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
         <img src="${src}" alt="${product.name}${i ? ` — photo ${i + 1}` : ''}" draggable="false">
       </div>`).join('');
     thumbs.innerHTML = single ? '' : photos.map((src, i) => `
-      <button type="button" class="pv-thumb${/\.(png|webp)$/i.test(src) ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
+      <button type="button" class="pv-thumb${/\.(png|webp)$|^data:image\//i.test(src) ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
         <img src="${src}" alt="">
       </button>`).join('');
     [...thumbs.children].forEach((t, i) => t.addEventListener('click', () => go(i)));

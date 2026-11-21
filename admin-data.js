@@ -15,7 +15,7 @@
                orderType, location, address, review,
                items:[{productId, name, type, qty, price}],
                total, status, paymentRef, history:[{status, at}] }
-     Product { id, name, group, price, weight, desc, image, available }
+     Product { id, name, group, price, weight, desc, photos[], placeholders }  (shared catalogue in stock.js)
 
    Order status:  pending   → customer says paid, payment to confirm
                   confirmed → payment confirmed
@@ -55,6 +55,7 @@ const AdminData = (() => {
   };
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(memory)); } catch (e) {} };
   const clone = v => JSON.parse(JSON.stringify(v));
+  const catalog = () => Catalog.list(typeof DEFAULT_PRODUCTS !== 'undefined' ? DEFAULT_PRODUCTS : []);
   const wait = (ms = 150) => new Promise(r => setTimeout(r, ms));   // feels like a network call
 
   /* ---------- sample data (deterministic, so it looks the same every time) ---------- */
@@ -217,21 +218,32 @@ const AdminData = (() => {
       return clone(order);
     },
 
+    /* Products live in the shared catalogue (stock.js), so the shop shows
+       whatever the admin adds, edits or deletes. image = the main photo. */
     async getProducts() {
       await wait();
-      // BACKEND: select * from products order by group, price
-      return clone(load().products);
+      // BACKEND: select * from products (with product_images) order by group, price
+      return catalog().map(p => ({ ...p, image: (p.photos || [])[0] || '' }));
     },
 
     async saveProduct(product) {
       await wait();
-      // BACKEND: upsert into products …
-      const data = load();
-      const i = data.products.findIndex(p => p.id === product.id);
-      if (i >= 0) data.products[i] = { ...data.products[i], ...product };
-      else data.products.push(product);
-      save();
-      return clone(product);
+      // BACKEND: upsert into products; upload new photos to storage, then save their addresses in product_images
+      const list = catalog();
+      const { image, images, available, ...fields } = product;
+      const i = list.findIndex(p => p.id === fields.id);
+      if (i >= 0) list[i] = { ...list[i], ...fields }; else list.push(fields);
+      if (!Catalog.saveAll(list)) throw new Error('NO_ROOM');
+      const saved = list[i >= 0 ? i : list.length - 1];
+      return clone({ ...saved, image: (saved.photos || [])[0] || '' });
+    },
+
+    async deleteProduct(id) {
+      await wait();
+      // BACKEND: delete from products where id = … (and its photos)
+      const list = catalog().filter(p => p.id !== id);
+      if (!Catalog.saveAll(list)) throw new Error('NO_ROOM');
+      return true;
     },
 
     async resetDemoData() {

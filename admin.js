@@ -777,6 +777,10 @@
     const sum = stockSummary(p, st);
     return `
       <article class="pa-row stock-${st.status}" data-id="${esc(p.id)}">
+        <div class="pa-tools">
+          <button type="button" class="pa-tool" data-edit aria-label="Edit ${esc(p.name)}" title="Edit details & photos"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+          <button type="button" class="pa-tool is-danger" data-delete aria-label="Delete ${esc(p.name)}" title="Delete product"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+        </div>
         <div class="pa-photo">${p.image ? `<img src="${esc(p.image)}" alt="">` : '<i class="fa-regular fa-image" aria-hidden="true"></i>'}</div>
         <div class="pa-info">
           <strong>${esc(p.name)}</strong>
@@ -825,6 +829,18 @@
   });
 
   $('productList').addEventListener('click', async e => {
+    const tool = e.target.closest('.pa-tool'); if (!tool) return;
+    const p = productsData.find(x => x.id === tool.closest('.pa-row').dataset.id); if (!p) return;
+    if ('edit' in tool.dataset) { openModal(p); return; }
+    const ok = await askConfirm({ title: `Delete ${p.name}?`, text: 'It will be removed from the shop straight away. Past orders keep their details.', yes: 'Delete product', danger: true });
+    if (!ok) return;
+    try { await AdminData.deleteProduct(p.id); } catch (err) { toast('Could not delete. Please try again.', 'bad'); return; }
+    productsData = productsData.filter(x => x.id !== p.id);
+    renderProducts();
+    toast(`${p.name} deleted`);
+  });
+
+  $('productList').addEventListener('click', async e => {
     const btn = e.target.closest('.pa-save'); if (!btn) return;
     const row = btn.closest('.pa-row');
     const p = productsData.find(x => x.id === row.dataset.id);
@@ -844,10 +860,105 @@
     toast(`${p.name} saved: ${stockSummary(p, Stock.get(p.id)).text}`);
   });
 
-  // add product
-  let photoPreview = '';
-  const openModal = () => {
-    $('productForm').reset(); photoPreview = ''; $('productFormMsg').textContent = '';
+  /* ---------- photo processing (runs in the browser) ----------
+     Every photo is resized, put on white and saved as WebP (JPEG where the
+     browser can't make WebP, e.g. older Safari). With "Make plain backgrounds
+     white" on, a plain background (the same colour all round the edges) is
+     turned pure white; busy backgrounds are left as they are.
+     BACKEND: upload the finished file to storage instead of keeping it in the browser. */
+  const MAX_SIDE = 1000, QUALITY = 0.8;
+  const kb = n => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+  const loadImage = file => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('not an image')); };
+    img.src = url;
+  });
+
+  // flood-fill the background from the edges and paint it white; false if the background is busy
+  function whitenBackground(ctx, w, h) {
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    // the background colour = the average of the edge pixels
+    const edge = [];
+    const stepX = Math.max(1, Math.floor(w / 120)), stepY = Math.max(1, Math.floor(h / 120));
+    for (let x = 0; x < w; x += stepX) edge.push(x, (h - 1) * w + x);
+    for (let y = 0; y < h; y += stepY) edge.push(y * w, y * w + w - 1);
+    const avg = [0, 0, 0];
+    edge.forEach(i => { for (let c = 0; c < 3; c++) avg[c] += d[i * 4 + c]; });
+    avg.forEach((v, c) => { avg[c] = v / edge.length; });
+    const dist = i => Math.hypot(d[i * 4] - avg[0], d[i * 4 + 1] - avg[1], d[i * 4 + 2] - avg[2]);
+    const spread = edge.reduce((n, i) => n + dist(i), 0) / edge.length;
+    const plain = edge.filter(i => dist(i) < 40).length / edge.length;
+    if (spread > 28 || plain < 0.8) return false;              // not a plain background
+
+    const tol = Math.min(60, Math.max(26, spread * 3 + 16));   // how close to the background colour counts
+    const mask = new Uint8Array(w * h), stack = [];
+    edge.forEach(i => { if (dist(i) < tol) { mask[i] = 1; stack.push(i); } });
+    while (stack.length) {
+      const i = stack.pop(), x = i % w;
+      const next = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w];
+      for (const n of next) if (n >= 0 && n < w * h && !mask[n] && dist(n) < tol) { mask[n] = 1; stack.push(n); }
+    }
+    // paint the background white, and soften the pixels right next to it so edges stay smooth
+    for (let i = 0; i < w * h; i++) {
+      let k = 0;
+      if (mask[i]) k = 1;
+      else {
+        const x = i % w;
+        if ((x > 0 && mask[i - 1]) || (x < w - 1 && mask[i + 1]) || mask[i - w] || mask[i + w]) k = Math.max(0, 1 - (dist(i) - tol) / tol) * 0.85;
+      }
+      if (k) for (let c = 0; c < 3; c++) d[i * 4 + c] += (255 - d[i * 4 + c]) * k;
+    }
+    ctx.putImageData(img, 0, 0);
+    return true;
+  }
+
+  const toBlob = (canvas, type) => new Promise(r => canvas.toBlob(r, type, QUALITY));
+  const toDataUrl = blob => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+
+  async function processPhoto(file, whiten) {
+    const img = await loadImage(file);
+    const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);          // see-through parts become white
+    ctx.drawImage(img, 0, 0, w, h);
+    const cleaned = whiten ? whitenBackground(ctx, w, h) : false;
+    let blob = await toBlob(canvas, 'image/webp');
+    if (!blob || blob.type !== 'image/webp') blob = await toBlob(canvas, 'image/jpeg');
+    return { src: await toDataUrl(blob), note: `${blob.type === 'image/webp' ? 'WebP' : 'JPEG'} · ${kb(blob.size)} (was ${kb(file.size)})`,
+      bg: whiten ? (cleaned ? 'Background made white' : 'Busy background, kept as is') : '' };
+  }
+
+  /* ---------- add / edit product window ---------- */
+  let editing = null;          // the product being edited (null = adding a new one)
+  let photos = [];             // [{ src, note, bg }] — first is the main photo
+  let busy = 0;                // photos still being processed
+
+  const drawPhotos = () => {
+    $('pPhotos').innerHTML = photos.map((ph, i) => `
+      <figure class="photo-tile${i === 0 ? ' is-main' : ''}">
+        <img src="${esc(ph.src)}" alt="Photo ${i + 1}">
+        ${i === 0 ? '<span class="photo-main">Main</span>' : `<button type="button" class="photo-btn photo-star" data-main="${i}" aria-label="Make photo ${i + 1} the main photo" title="Make main photo"><i class="fa-regular fa-star" aria-hidden="true"></i></button>`}
+        <button type="button" class="photo-btn photo-remove" data-remove="${i}" aria-label="Remove photo ${i + 1}" title="Remove"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        ${ph.note ? `<figcaption>${esc(ph.note)}${ph.bg ? `<br><span class="${/kept/.test(ph.bg) ? 'is-kept' : ''}">${esc(ph.bg)}</span>` : ''}</figcaption>` : ''}
+      </figure>`).join('') +
+      Array.from({ length: busy }, () => '<div class="photo-tile is-busy"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>Making WebP…</span></div>').join('') +
+      `<label class="photo-tile photo-add" for="pPhoto"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>${photos.length || busy ? 'Add more photos' : 'Add photos'}</span></label>`;
+  };
+
+  const openModal = (product = null) => {
+    editing = product;
+    $('productForm').reset(); $('productFormMsg').textContent = '';
+    $('productModalTitle').textContent = product ? `Edit ${product.name}` : 'Add product';
+    if (product) {
+      $('pName').value = product.name; $('pPrice').value = product.price; $('pWeight').value = product.weight || '';
+      $('pGroup').value = product.group; $('pDesc').value = product.desc || '';
+    }
+    photos = ((product && product.photos) || []).map(src => ({ src, note: '' }));
+    busy = 0; drawPhotos();
     const ov = $('productModal'); ov.hidden = false;
     requestAnimationFrame(() => ov.classList.add('is-open'));
     document.body.classList.add('viewer-open');
@@ -858,25 +969,58 @@
     document.body.classList.remove('viewer-open');
     setTimeout(() => { ov.hidden = true; }, 250);
   };
-  $('addProductBtn').addEventListener('click', openModal);
+  $('addProductBtn').addEventListener('click', () => openModal());
   $('productModalClose').addEventListener('click', closeModal);
   $('productCancel').addEventListener('click', closeModal);
   $('productModal').addEventListener('click', e => { if (e.target === $('productModal')) closeModal(); });
-  $('pPhoto').addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader(); r.onload = () => { photoPreview = r.result; }; r.readAsDataURL(f);
+
+  $('pPhoto').addEventListener('change', async e => {
+    const files = [...e.target.files].filter(f => /^image\//.test(f.type));
+    e.target.value = '';                                       // lets you pick the same file again
+    if (!files.length) return;
+    busy += files.length; drawPhotos();
+    for (const f of files) {
+      try { photos.push(await processPhoto(f, $('pWhiten').checked)); }
+      catch (err) { toast(`${f.name} could not be opened as a photo.`, 'bad'); }
+      busy--; drawPhotos();
+    }
+  });
+
+  $('pPhotos').addEventListener('click', e => {
+    const rm = e.target.closest('[data-remove]'), star = e.target.closest('[data-main]');
+    if (rm) photos.splice(Number(rm.dataset.remove), 1);
+    else if (star) photos.unshift(...photos.splice(Number(star.dataset.main), 1));
+    else return;
+    drawPhotos();
   });
 
   $('productForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('pName').value.trim(), price = Number($('pPrice').value);
     const msg = $('productFormMsg');
-    if (!name || !(price > 0)) { msg.className = 'form-message error'; msg.textContent = 'Add a name and a price above ₦0.'; return; }
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36).slice(-4);
-    const product = { id, name, price, group: $('pGroup').value, weight: $('pWeight').value.trim(), desc: $('pDesc').value.trim(), image: photoPreview.length < 300000 ? photoPreview : '' };
-    const saved = await AdminData.saveProduct(product);
-    productsData.push(saved); renderProducts(); closeModal();
-    toast(`${name} added`);
+    msg.className = 'form-message error';
+    if (!name || !(price > 0)) { msg.textContent = 'Add a name and a price above ₦0.'; return; }
+    if (busy) { msg.textContent = 'Please wait, photos are still being processed.'; return; }
+    msg.textContent = '';
+    const id = editing ? editing.id : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36).slice(-4);
+    const src = photos.map(ph => ph.src);
+    const product = { id, name, price, group: $('pGroup').value, weight: $('pWeight').value.trim(), desc: $('pDesc').value.trim(), photos: src,
+      // stand-in photos only for built-in products that still have just their one photo
+      placeholders: editing ? (editing.placeholders !== false && !src.some(x => x.startsWith('data:'))) : false };
+    const submit = $('productForm').querySelector('[type="submit"]'); submit.disabled = true;
+    let saved;
+    try { saved = await AdminData.saveProduct(product); }
+    catch (err) {
+      submit.disabled = false;
+      msg.textContent = err.message === 'NO_ROOM'
+        ? 'This browser has no room for more photos in demo mode. Remove a photo or two (or delete a test product) and try again. Once the backend is connected there is no limit.'
+        : 'Could not save. Please try again.';
+      return;
+    }
+    submit.disabled = false;
+    if (editing) Object.assign(editing, saved); else productsData.push(saved);
+    renderProducts(); closeModal();
+    toast(`${name} ${editing ? 'updated' : 'added'}. It's in the shop now.`);
   });
 
   /* ======================= shared keyboard ======================= */
