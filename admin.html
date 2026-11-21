@@ -168,7 +168,10 @@
       <section class="admin-view" data-view="products" hidden>
         <div class="products-toolbar">
           <p class="products-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Availability controls what customers can order: <strong>Unavailable</strong> products show as sold out, and <strong>Limited</strong> stock goes down as orders come in. Demo: changes apply to the shop in this browser only, until the backend is connected.</p>
-          <button type="button" class="btn btn-primary" id="addProductBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add product</button>
+          <div class="products-actions">
+            <a class="btn btn-light" href="products.html"><i class="fa-solid fa-store" aria-hidden="true"></i> View shop</a>
+            <button type="button" class="btn btn-primary" id="addProductBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add product</button>
+          </div>
         </div>
         <div class="product-admin-list" id="productList"></div>
       </section>

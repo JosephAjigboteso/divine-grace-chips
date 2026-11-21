@@ -854,6 +854,8 @@
 }
 
 .products-note { font-size: 13px; color: var(--text-muted); max-width: 560px; }
+.products-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
 
 .product-admin-list { display: grid; gap: 10px; }
 
@@ -918,38 +920,62 @@
 .pa-seg { border: 0; padding: 0; margin: 0; min-width: 0; }
 .pa-seg legend { padding: 0; margin-bottom: 5px; font-size: 11px; font-weight: 700; color: var(--text-muted); }
 
+/* availability + ripe/unripe choices: separate buttons, like the order form's choices */
 .pa-seg-opts {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 11px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
+  gap: 8px;
 }
 
 .pa-seg-opts label { position: relative; cursor: pointer; }
 .pa-seg-opts input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 
-.pa-seg-opts span {
-  display: block;
-  padding: 7px 11px;
-  border-radius: 8px;
-  font-size: 12.5px;
+.pa-seg-opts label > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-muted);
   white-space: nowrap;
-  transition: background var(--transition), color var(--transition);
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
 }
 
-.pa-seg-opts label:hover span { color: var(--text); }
-.pa-seg-opts input:checked + span { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
-.pa-seg-opts input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
+.pa-seg-opts label > span > i { font-size: 13px; color: var(--text-muted); transition: color var(--transition); }
+.pa-seg-opts label:hover > span { border-color: var(--border-strong); }
 
-/* colour hint on the selected availability */
-.pa-seg-opts input[value="full"]:checked + span { box-shadow: inset 0 -2px 0 var(--st-good), var(--shadow-sm); }
-.pa-seg-opts input[value="limited"]:checked + span { box-shadow: inset 0 -2px 0 var(--st-warning), var(--shadow-sm); }
-.pa-seg-opts input[value="out"]:checked + span { box-shadow: inset 0 -2px 0 var(--st-critical), var(--shadow-sm); }
+.pa-seg-opts input:checked + span {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.pa-seg-opts input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* icons take their colour when chosen */
+.opt-full input:checked + span > i { color: var(--st-good); }
+.opt-limited input:checked + span > i { color: #b07700; }
+.opt-out input:checked + span > i { color: var(--st-critical); }
+[data-theme="dark"] .opt-limited input:checked + span > i { color: var(--st-warning); }
+
+/* ripe / unripe colour dots */
+.pa-seg-opts .dots { display: inline-flex; }
+.pa-seg-opts .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+.pa-seg-opts .dot + .dot { margin-left: -4px; }
+.pa-seg-opts .dot.ripe { background: #f2b90c; }
+.pa-seg-opts .dot.unripe { background: #5b9a3c; }
 
 .pa-qty { display: flex; gap: 10px; }
 .pa-qty .pa-field { width: 130px; }
@@ -1096,8 +1122,9 @@
   .pa-qty { width: 100%; }
   .pa-qty .pa-field { flex: 1; width: auto; }
   .pa-seg { width: 100%; }
-  .pa-seg-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
-  .pa-seg-opts span { padding: 8px 4px; font-size: 12px; text-align: center; white-space: normal; line-height: 1.25; }
+  .pa-seg-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+  .pa-seg-opts label, .pa-seg-opts label > span { width: 100%; }
+  .pa-seg-opts label > span { flex-direction: column; gap: 4px; height: auto; min-height: 58px; padding: 8px 4px; font-size: 12px; text-align: center; white-space: normal; line-height: 1.2; }
 }
 
 @media (max-width: 560px) {

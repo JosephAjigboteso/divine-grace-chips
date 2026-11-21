@@ -509,8 +509,16 @@
   /* Stock (stock.js) decides what customers can order:
      Fully available · Limited quantity (packs left per type) · Unavailable,
      and for plantain products: Ripe & Unripe / Ripe only / Unripe only. */
-  const STATUS_OPTS = [['full', 'Fully available'], ['limited', 'Limited quantity'], ['out', 'Unavailable']];
-  const TYPE_OPTS = [['both', 'Ripe & Unripe'], ['Ripe', 'Ripe only'], ['Unripe', 'Unripe only']];
+  const STATUS_OPTS = [
+    ['full', 'Fully available', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i>'],
+    ['limited', 'Limited quantity', '<i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>'],
+    ['out', 'Unavailable', '<i class="fa-solid fa-ban" aria-hidden="true"></i>']
+  ];
+  const TYPE_OPTS = [
+    ['both', 'Ripe & Unripe', '<span class="dots" aria-hidden="true"><i class="dot ripe"></i><i class="dot unripe"></i></span>'],
+    ['Ripe', 'Ripe only', '<span class="dots" aria-hidden="true"><i class="dot ripe"></i></span>'],
+    ['Unripe', 'Unripe only', '<span class="dots" aria-hidden="true"><i class="dot unripe"></i></span>']
+  ];
 
   const stockSummary = (p, st) => {
     if (st.status === 'out') return { text: 'Unavailable', tone: 'critical' };
@@ -526,8 +534,8 @@
   const seg = (name, opts, value, label) => `
     <fieldset class="pa-seg">
       <legend>${label}</legend>
-      <div class="pa-seg-opts">${opts.map(([v, t]) => `
-        <label><input type="radio" name="${name}" value="${v}"${v === value ? ' checked' : ''}><span>${t}</span></label>`).join('')}
+      <div class="pa-seg-opts">${opts.map(([v, t, icon]) => `
+        <label class="opt-${v.toLowerCase()}"><input type="radio" name="${name}" value="${v}"${v === value ? ' checked' : ''}><span>${icon || ''}${t}</span></label>`).join('')}
       </div>
     </fieldset>`;
 
@@ -554,11 +562,10 @@
     return { status, types, qty };
   };
 
-  function renderProducts() {
-    $('productList').innerHTML = productsData.map(p => {
-      const st = Stock.get(p.id);
-      const sum = stockSummary(p, st);
-      return `
+  const productRow = p => {
+    const st = Stock.get(p.id);
+    const sum = stockSummary(p, st);
+    return `
       <article class="pa-row stock-${st.status}" data-id="${esc(p.id)}">
         <div class="pa-photo">${p.image ? `<img src="${esc(p.image)}" alt="">` : '<i class="fa-regular fa-image" aria-hidden="true"></i>'}</div>
         <div class="pa-info">
@@ -571,11 +578,23 @@
         <button type="button" class="btn btn-primary pa-save" hidden>Save</button>
         <div class="pa-stock">${stockPanel(p, st)}</div>
       </article>`;
-    }).join('');
+  };
+
+  function renderProducts() {
+    $('productList').innerHTML = productsData.map(productRow).join('');
   }
 
-  // an order in the shop (another tab) changed the stock: refresh, unless you're mid-edit
-  Stock.onChange(() => { if (!document.querySelector('.pa-row.is-dirty')) renderProducts(); });
+  // redraw just one product (keeps unsaved edits on the others)
+  const redrawRow = p => {
+    const row = $('productList').querySelector(`.pa-row[data-id="${CSS.escape(p.id)}"]`);
+    if (row) row.outerHTML = productRow(p);
+  };
+
+  // an order in the shop (another tab) changed the stock: refresh the rows you're not editing
+  Stock.onChange(() => productsData.forEach(p => {
+    const row = $('productList').querySelector(`.pa-row[data-id="${CSS.escape(p.id)}"]`);
+    if (row && !row.classList.contains('is-dirty')) redrawRow(p);
+  }));
 
   const markDirty = row => { row.querySelector('.pa-save').hidden = false; row.classList.add('is-dirty'); };
 
@@ -611,7 +630,7 @@
     Object.assign(p, saved);
     Stock.set(p.id, st);                                   // BACKEND: save to the stock table
     btn.disabled = false;
-    renderProducts();
+    redrawRow(p);
     toast(`${p.name} saved: ${stockSummary(p, Stock.get(p.id)).text}`);
   });
 
