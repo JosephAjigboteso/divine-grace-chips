@@ -67,6 +67,13 @@
         <h1>Almost there!</h1>
         <p>Pick your products, set the quantity and tell us where to reach you.</p>
 
+        <!-- next delivery batch (filled in by script.js from the admin's setting) -->
+        <button type="button" class="batch-strip" id="batchStrip" hidden>
+          <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
+          <span id="batchStripText"></span>
+          <i class="fa-solid fa-circle-info batch-strip-more" aria-hidden="true"></i>
+        </button>
+
         <!-- shown while no product has been chosen -->
         <div class="order-empty" id="orderEmpty">
           <span class="order-empty-icon" aria-hidden="true"><i class="fa-solid fa-basket-shopping"></i></span>
@@ -176,6 +183,7 @@
           <!-- payment details sent with the order -->
           <input type="hidden" name="payment_method" id="paymentMethodField">
           <input type="hidden" name="payment_reference" id="paymentRefField">
+          <input type="hidden" name="expected_delivery" id="deliveryField">
 
           <button class="btn btn-primary submit-btn" type="submit" id="submitBtn">
             Proceed to Payment <i class="fa-solid fa-lock" aria-hidden="true"></i>
@@ -225,6 +233,21 @@
     </div>
   </footer>
 
+  <!-- ===== DELIVERY ANNOUNCEMENT (pops up when the order page opens) ===== -->
+  <div class="pay-overlay batch-overlay" id="batchPopup" hidden>
+    <div class="pay batch-pop" role="dialog" aria-modal="true" aria-labelledby="batchTitle" aria-describedby="batchBody">
+      <button class="pay-close" type="button" id="batchClose" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <span class="batch-icon" aria-hidden="true"><i class="fa-solid fa-truck-fast"></i></span>
+      <span class="pay-badge" id="batchKicker">Next delivery</span>
+      <h2 id="batchTitle"></h2>
+      <div id="batchBody">
+        <p class="batch-text" id="batchText"></p>
+        <ul class="batch-facts" id="batchFacts"></ul>
+      </div>
+      <button class="btn btn-primary batch-ok" type="button" id="batchOk">Continue to order <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
   <!-- ===== PAYMENT (opens after "Proceed to Payment") ===== -->
   <div class="pay-overlay" id="payment" hidden>
     <div class="pay" role="dialog" aria-modal="true" aria-labelledby="payTitle">
@@ -270,6 +293,7 @@
       <div class="pay-step pay-done" id="payDone" hidden>
         <span class="pay-done-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
         <h2>Order received!</h2>
+        <p class="batch-done" id="batchDone" hidden></p>
         <p id="payDoneText">Thank you. We will confirm your payment and contact you shortly to arrange delivery.</p>
         <div class="pay-done-ref">Order reference <strong id="payDoneRef"></strong></div>
         <a class="btn btn-whatsapp" id="payWhatsApp" href="#" target="_blank" rel="noopener">

@@ -482,6 +482,55 @@ function setupOrderPage() {
   const clearMessage = () => { message.className = 'form-message'; message.textContent = ''; };
   const showError = text => { message.className = 'form-message error'; message.textContent = text; };
 
+  /* ---- delivery batch announcement (set by the admin) ---- */
+  const hasBatch = () => typeof Batch !== 'undefined';
+  const batchPopup = $('batchPopup');
+  let batchFocus = null;
+
+  const fillBatch = () => {
+    const b = hasBatch() ? Batch.current() : null;
+    $('batchStrip').hidden = !b;
+    $('deliveryField').value = b ? (b.closed ? `Next batch (after ${b.dateText})` : b.dateText + (b.note ? `, ${b.note}` : '')) : '';
+    if (!b) return null;
+    $('batchStripText').innerHTML = b.closed
+      ? 'Orders for the current batch have closed. <strong>New orders join the next batch.</strong>'
+      : `Next delivery: <strong>${b.dateText}</strong>${b.closesText ? ` · Order by ${Batch.format(b.closes, false)}` : ''}`;
+    $('batchKicker').textContent = b.closed ? 'Delivery update' : 'Next delivery';
+    $('batchTitle').textContent = b.closed ? 'This batch is now closed' : b.dateText;
+    $('batchText').textContent = b.closed
+      ? `Orders for the ${b.dateText} delivery closed on ${b.closesText}. You can still order: your order will go in the next delivery batch and we will confirm the date with you.`
+      : 'We deliver in batches: every order placed now is delivered together on this date.';
+    const facts = [];
+    if (!b.closed && b.note) facts.push(['fa-regular fa-clock', b.note]);
+    if (!b.closed && b.closesText) facts.push(['fa-regular fa-calendar-xmark', `Orders close ${b.closesText}`]);
+    facts.push(['fa-solid fa-location-dot', 'Pick up at UNILAG or Charity Pavilion, or choose home delivery']);
+    $('batchFacts').innerHTML = facts.map(([icon, text]) => `<li><i class="${icon}" aria-hidden="true"></i><span></span></li>`).join('');
+    [...$('batchFacts').children].forEach((li, i) => { li.querySelector('span').textContent = facts[i][1]; });
+    return b;
+  };
+
+  const openBatch = () => {
+    if (!fillBatch()) return;
+    batchFocus = document.activeElement;
+    batchPopup.hidden = false;
+    requestAnimationFrame(() => batchPopup.classList.add('is-open'));
+    document.body.classList.add('viewer-open');
+    $('batchOk').focus({ preventScroll: true });
+  };
+  const closeBatch = () => {
+    if (batchPopup.hidden) return;
+    batchPopup.classList.remove('is-open');
+    document.body.classList.remove('viewer-open');
+    setTimeout(() => { batchPopup.hidden = true; }, 250);
+    if (batchFocus && batchFocus !== document.body) batchFocus.focus({ preventScroll: true });
+  };
+  ['batchOk', 'batchClose'].forEach(id => $(id).addEventListener('click', closeBatch));
+  batchPopup.addEventListener('click', e => { if (e.target === batchPopup) closeBatch(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBatch(); });
+  $('batchStrip').addEventListener('click', openBatch);
+  if (hasBatch()) Batch.onChange(fillBatch);
+  setTimeout(openBatch, 350);   // pops up every time the order page opens
+
   /* ---- payment (bank transfer) ---- */
   const pay = {
     overlay: $('payment'), step: $('payStep'), done: $('payDone'), confirm: $('payConfirm'),
@@ -625,6 +674,7 @@ function setupOrderPage() {
         `*Name:* ${$('name').value.trim()}`,
         `*Phone:* ${phone.value}`,
         `*Order type:* ${(form.querySelector('[name="order_type"]:checked') || {}).value || ''}`,
+        ...($('deliveryField').value ? [`*Expected delivery:* ${$('deliveryField').value}`] : []),
         `*${locationSelect.value === 'Home Delivery' ? 'Delivery' : 'Pickup'}:* ${locationSelect.value}${locationSelect.value === 'Home Delivery' ? ` — ${address.value.trim()}` : ''}`,
         '',
         `I have paid by bank transfer to ${PAYMENT_ACCOUNT.bank} (${PAYMENT_ACCOUNT.accountNumber}) using the reference above.`
@@ -633,6 +683,10 @@ function setupOrderPage() {
 
       // success: show the confirmation, then clear the order and form
       const where = locationSelect.value === 'Home Delivery' ? 'your home address' : locationSelect.value;
+      const batchNow = $('deliveryField').value;
+      $('batchDone').hidden = !batchNow;
+      $('batchDone').innerHTML = batchNow ? `<i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Expected delivery: <strong></strong>` : '';
+      if (batchNow) $('batchDone').querySelector('strong').textContent = batchNow;
       $('payDoneText').textContent = `Thank you, ${$('name').value.trim().split(/\s+/)[0]}! We will confirm your payment and call you on ${phone.value} to arrange delivery to ${where}.`;
       $('payDoneRef').textContent = reference;
       pay.step.hidden = true; pay.done.hidden = false;

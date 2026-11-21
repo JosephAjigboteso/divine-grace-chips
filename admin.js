@@ -505,6 +505,54 @@
     toast(`${updated.ref}: ${STATUS[status].label}`);
   });
 
+  /* ======================= delivery batch ======================= */
+  const fillBatchForm = () => {
+    const b = Batch.get();
+    $('bDate').value = b.date; $('bCloses').value = b.closes; $('bNote').value = b.note; $('bShow').checked = b.show !== false;
+    previewBatch();
+  };
+
+  // what customers will see, built from the form (saved or not)
+  function previewBatch() {
+    const date = $('bDate').value, closes = $('bCloses').value, note = $('bNote').value.trim(), show = $('bShow').checked;
+    const saved = Batch.current();
+    const state = $('batchState');
+    state.className = 'batch-state ' + (saved ? (saved.closed ? 'is-closed' : 'is-live') : 'is-off');
+    state.textContent = saved ? (saved.closed ? 'Orders closed' : 'Live on the shop') : 'Not showing';
+    const p = $('batchPreview');
+    if (!date) { p.innerHTML = '<i class="fa-regular fa-calendar" aria-hidden="true"></i> Pick a delivery date to see the customer message.'; return; }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const warn = [];
+    if (Batch.parse(date) < today) warn.push('This date has passed, so customers won’t see it.');
+    if (closes && Batch.parse(closes) > Batch.parse(date)) warn.push('“Orders close” is after the delivery date.');
+    if (!show) warn.push('Switched off: customers won’t see it.');
+    p.innerHTML = `<span class="bp-label">Customers will see</span>
+      <strong>Next delivery: ${esc(Batch.format(date))}</strong>
+      <span>${note ? esc(note) + ' · ' : ''}${closes ? 'Orders close ' + esc(Batch.format(closes)) : 'No closing date'}</span>
+      ${warn.map(w => `<em><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${w}</em>`).join('')}`;
+  }
+
+  ['bDate', 'bCloses', 'bNote', 'bShow'].forEach(id => $(id).addEventListener('input', previewBatch));
+
+  $('batchForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!$('bDate').value) { toast('Choose the expected delivery date.', 'bad'); $('bDate').focus(); return; }
+    if ($('bCloses').value && Batch.parse($('bCloses').value) > Batch.parse($('bDate').value)) { toast('“Orders close” must be on or before the delivery date.', 'bad'); return; }
+    Batch.set({ date: $('bDate').value, closes: $('bCloses').value, note: $('bNote').value.trim(), show: $('bShow').checked });   // BACKEND: save to settings
+    previewBatch();
+    toast(Batch.current() ? `Customers now see: delivery ${Batch.format($('bDate').value, false)}` : 'Saved (not showing to customers)');
+  });
+
+  $('bClear').addEventListener('click', () => {
+    if (!confirm('Clear the delivery date? Customers will stop seeing the announcement.')) return;
+    Batch.set({ date: '', closes: '', note: '', show: true });
+    fillBatchForm();
+    toast('Delivery date cleared');
+  });
+
+  Batch.onChange(fillBatchForm);
+  fillBatchForm();
+
   /* ======================= products ======================= */
   /* Stock (stock.js) decides what customers can order:
      Fully available · Limited quantity (packs left per type) · Unavailable,

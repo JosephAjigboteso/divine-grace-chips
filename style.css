@@ -2167,6 +2167,87 @@ body {
   color: var(--text);
 }
 
+/* ---------- DELIVERY BATCH (order page) ---------- */
+.batch-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.batch-strip[hidden] { display: none; }
+.batch-strip > i:first-child { font-size: 16px; color: var(--primary-dark); }
+[data-theme="dark"] .batch-strip > i:first-child { color: var(--primary); }
+.batch-strip span { flex: 1; }
+.batch-strip-more { color: var(--text-muted); font-size: 13px; }
+.batch-strip:hover { border-color: var(--primary); }
+
+.batch-pop { text-align: center; padding-top: 34px; }
+.batch-pop h2 { margin: 10px 0 8px; }
+
+.batch-icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-light), var(--primary));
+  color: #201b13;
+  font-size: 26px;
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.batch-text { font-size: 14.5px; color: var(--text-muted); margin-bottom: 16px; }
+
+.batch-facts {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 4px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+
+.batch-facts li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.batch-facts li:last-child { border-bottom: 0; }
+.batch-facts i { width: 18px; text-align: center; color: var(--primary-dark); }
+[data-theme="dark"] .batch-facts i { color: var(--primary); }
+
+.batch-ok { width: 100%; justify-content: center; }
+
+.batch-done {
+  margin: 6px 0 10px !important;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--text) !important;
+  font-size: 13px !important;
+}
+
+.batch-done i { color: var(--primary-dark); margin-right: 4px; }
+[data-theme="dark"] .batch-done i { color: var(--primary); }
+
 /* ---------- PAYMENT WINDOW (order page) ---------- */
 .pay-overlay {
   position: fixed;

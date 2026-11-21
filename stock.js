@@ -95,3 +95,62 @@ const Stock = (() => {
 
   return { get, set, hasTypes, typesFor, left, orderableTypes, soldOut, totalLeft, label, take, onChange };
 })();
+
+/* ============================================================
+   DELIVERY BATCH — when the current orders will be delivered
+   ------------------------------------------------------------
+   Orders are delivered together in batches. The admin sets:
+     date    expected delivery date, 'YYYY-MM-DD' (e.g. a Saturday)
+     note    optional time / details, e.g. 'Between 10am and 4pm'
+     closes  optional last day to order for this batch, 'YYYY-MM-DD'
+     show    whether customers see the announcement
+   Same demo storage as Stock (this browser); with a backend,
+   replace load() / save() with a call to a `settings` table.
+   ============================================================ */
+const Batch = (() => {
+  const KEY = 'dg-delivery-v1';
+  const DEFAULT = { date: '', note: '', closes: '', show: true };
+  let memory = null;
+  const load = () => {
+    if (memory) return memory;
+    try { memory = { ...DEFAULT, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch (e) { memory = { ...DEFAULT }; }
+    return memory;
+  };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(memory)); } catch (e) {} };
+
+  // 'YYYY-MM-DD' → a local date (no time-zone shift)
+  const parse = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const format = (iso, long = true) => {
+    const d = parse(iso);
+    return d ? d.toLocaleDateString('en-GB', long ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  };
+
+  const get = () => ({ ...load() });
+  const set = data => {
+    memory = { ...DEFAULT, ...data, show: data.show !== false };
+    save();
+    return get();
+  };
+
+  // what customers should see right now
+  const current = () => {
+    const b = load();
+    const date = parse(b.date);
+    if (!b.show || !date || date < today()) return null;          // nothing set, switched off, or the date has passed
+    const closes = parse(b.closes);
+    return {
+      date: b.date,
+      dateText: format(b.date),
+      shortDate: format(b.date, false),
+      note: (b.note || '').trim(),
+      closes: closes ? b.closes : '',
+      closesText: closes ? format(b.closes) : '',
+      closed: !!closes && closes < today()                        // past the last order day
+    };
+  };
+
+  const onChange = fn => window.addEventListener('storage', e => { if (e.key === KEY) { memory = null; fn(); } });
+
+  return { get, set, current, format, parse, onChange };
+})();

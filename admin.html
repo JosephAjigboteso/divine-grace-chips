@@ -166,6 +166,32 @@
 
       <!-- ===== PRODUCTS ===== -->
       <section class="admin-view" data-view="products" hidden>
+        <!-- next delivery batch: customers see this when they order -->
+        <form class="admin-card batch-card" id="batchForm" novalidate>
+          <header class="card-head">
+            <div>
+              <h2><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Next delivery batch</h2>
+              <p>Customers see this date in a pop-up whenever they open the order page.</p>
+            </div>
+            <span class="batch-state" id="batchState"></span>
+          </header>
+          <div class="batch-grid">
+            <label class="pa-field"><span>Expected delivery date <em>*</em></span><input type="date" id="bDate" required></label>
+            <label class="pa-field"><span>Orders close (optional)</span><input type="date" id="bCloses"></label>
+            <label class="pa-field batch-note"><span>Time or note (optional)</span><input type="text" id="bNote" maxlength="80" placeholder="e.g. Between 10am and 4pm"></label>
+            <label class="batch-toggle">
+              <input type="checkbox" id="bShow" checked>
+              <span class="toggle-track" aria-hidden="true"></span>
+              <span>Show to customers</span>
+            </label>
+          </div>
+          <div class="batch-preview" id="batchPreview" aria-live="polite"></div>
+          <div class="batch-actions">
+            <button type="button" class="btn btn-light" id="bClear">Clear</button>
+            <button type="submit" class="btn btn-primary" id="bSave"><i class="fa-solid fa-check" aria-hidden="true"></i> Save delivery date</button>
+          </div>
+        </form>
+
         <div class="products-toolbar">
           <p class="products-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Availability controls what customers can order: <strong>Unavailable</strong> products show as sold out, and <strong>Limited</strong> stock goes down as orders come in. Demo: changes apply to the shop in this browser only, until the backend is connected.</p>
           <div class="products-actions">

@@ -17,7 +17,7 @@ A static website (HTML, CSS, JavaScript; no build step) plus a front-end admin d
 | `script.js` | Site behaviour, product list, payment account details |
 | `admin.css`, `admin.js` | Admin dashboard styles and screens |
 | `admin-data.js` | The admin **data layer**: the only place the dashboard reads or saves data |
-| `stock.js` | Product availability shared by shop and admin: fully available / limited (packs left per ripe/unripe) / unavailable |
+| `stock.js` | Shared by shop and admin: product availability (fully available / limited packs per ripe-unripe / unavailable) and the **next delivery batch** date customers see when ordering |
 | `asset/products/` | One folder of photos per product; see `asset/products/README.md` |
 | `asset/icons/`, `asset/og-image.jpg` | Browser icon and the link-preview card shown on WhatsApp etc. |
 
@@ -51,6 +51,7 @@ usable straight from this static site.
 | `order_items` | product, ripe/unripe, quantity, price at time of order |
 | `order_status_history` | each status change with its time (feeds the delivery charts) |
 | `stock` | per product: status (full / limited / out), ripe-unripe availability, packs left per type |
+| `settings` | the next delivery batch: expected date, optional note and order-closing date, show on/off |
 
 `stock.js` works the same way: today it saves in the browser (so admin changes only reach the shop
 in that same browser); with the backend, its load/save become calls to the `stock` table and every
