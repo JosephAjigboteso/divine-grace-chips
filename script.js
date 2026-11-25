@@ -477,6 +477,19 @@ function setupOrderPage() {
     if (!home) address.value = '';
   };
   locationSelect.addEventListener('change', syncLocation);
+
+  // the delivery locations come from the admin's current delivery batch
+  const fillLocations = () => {
+    if (typeof Batch === 'undefined') return;
+    const keep = locationSelect.value;
+    const opts = Batch.locationOptions();
+    locationSelect.innerHTML = '<option value="" disabled>Select a delivery location</option>';
+    opts.forEach(name => { const o = document.createElement('option'); o.value = o.textContent = name; locationSelect.appendChild(o); });
+    locationSelect.value = opts.includes(keep) ? keep : '';
+    syncLocation();
+  };
+  fillLocations();
+  if (typeof Batch !== 'undefined') Batch.onChange(fillLocations);
   syncLocation();
 
   form.addEventListener('change', e => {
@@ -509,7 +522,8 @@ function setupOrderPage() {
     const facts = [];
     if (!b.closed && b.note) facts.push(['fa-regular fa-clock', b.note]);
     if (!b.closed && b.closesText) facts.push(['fa-regular fa-calendar-xmark', `Orders close ${b.closesText}`]);
-    facts.push(['fa-solid fa-location-dot', 'Pick up at UNILAG or Charity Pavilion, or choose home delivery']);
+    const where = Batch.placesText(b.places);
+    if (where) facts.push(['fa-solid fa-location-dot', where]);
     $('batchFacts').innerHTML = facts.map(([icon, text]) => `<li><i class="${icon}" aria-hidden="true"></i><span></span></li>`).join('');
     [...$('batchFacts').children].forEach((li, i) => { li.querySelector('span').textContent = facts[i][1]; });
     return b;

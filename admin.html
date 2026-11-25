@@ -194,6 +194,21 @@
                 <span>Show the pop-up to customers</span>
               </label>
             </div>
+            <fieldset class="batch-places">
+              <legend>Delivery locations for this batch <em>*</em></legend>
+              <div class="place-chips" id="bPickups" aria-live="polite"></div>
+              <div class="place-row">
+                <div class="place-add">
+                  <input type="text" id="bPickupNew" maxlength="60" placeholder="New pickup point" aria-label="New pickup point">
+                  <button type="button" class="btn btn-light" id="bPickupAdd"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add</button>
+                </div>
+                <label class="batch-toggle">
+                  <input type="checkbox" id="bHome" checked>
+                  <span class="toggle-track" aria-hidden="true"></span>
+                  <span>Offer home delivery</span>
+                </label>
+              </div>
+            </fieldset>
             <div class="batch-preview" id="batchPreview" aria-live="polite"></div>
             <p class="batch-reset-note" id="batchResetNote" hidden><i class="fa-solid fa-rotate" aria-hidden="true"></i><span>Opening a batch sets <strong>all products back to Fully available</strong>. You can mark any of them Limited or Unavailable below afterwards.</span></p>
             <div class="batch-waiting" id="batchWaiting" hidden></div>

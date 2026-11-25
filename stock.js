@@ -103,6 +103,8 @@ const Stock = (() => {
      number  Batch 1, 2, 3 …            date    expected delivery 'YYYY-MM-DD'
      closes  last day to order (opt.)   note    e.g. 'Between 10am and 4pm' (opt.)
      show    customers see the pop-up   status  'open' | 'closed'
+     pickups ['UNILAG', 'Charity Pavilion']  pickup points for this batch
+     home    true/false                       home delivery offered
    An order placed while a batch is open (and before it closes) belongs to it.
    An order placed after it closes, or when no batch is open, is tagged
    "awaiting new batch" until the admin sends that customer the new date.
@@ -133,20 +135,42 @@ const Batch = (() => {
   const open = () => clone(load().list.find(b => b.status === 'open') || null);
   const label = b => (b ? `Batch ${b.number} · ${format(b.date, false)}` : '');
 
+  // where customers can get their order (batches saved before this existed use the usual places)
+  const DEFAULT_PICKUPS = ['UNILAG', 'Charity Pavilion'];
+  const HOME = 'Home Delivery';
+  const cleanPickups = list => [...new Set((list || []).map(x => String(x).trim()).filter(x => x && x !== HOME))];
+  const placesOf = b => ({ pickups: b && Array.isArray(b.pickups) ? cleanPickups(b.pickups) : DEFAULT_PICKUPS.slice(), home: !b || b.home !== false });
+  // the places offered right now: the open batch, else the most recent one
+  const places = () => {
+    const list = load().list;
+    const b = list.find(x => x.status === 'open') || list.slice().sort((x, y) => y.number - x.number)[0];
+    return placesOf(b);
+  };
+  // the options for the order form, e.g. ['UNILAG', 'Charity Pavilion', 'Home Delivery']
+  const locationOptions = (p = places()) => [...p.pickups, ...(p.home ? [HOME] : [])];
+  const join = arr => (arr.length < 2 ? arr.join('') : `${arr.slice(0, -1).join(', ')} or ${arr[arr.length - 1]}`);
+  // e.g. "Pick up at UNILAG or Charity Pavilion, or choose home delivery"
+  const placesText = (p = places()) => {
+    if (!p.pickups.length) return p.home ? 'Home delivery only' : '';
+    return `Pick up at ${join(p.pickups)}${p.home ? ', or choose home delivery' : ''}`;
+  };
+
   // still taking orders for this batch today?
   const taking = b => !!b && parse(b.date) >= today() && (!b.closes || parse(b.closes) >= today());
 
-  const create = ({ date, closes = '', note = '', show = true }) => {
+  const create = ({ date, closes = '', note = '', show = true, pickups, home = true }) => {
     if (load().list.some(b => b.status === 'open')) throw new Error('Close the current batch first.');
     const number = load().list.reduce((n, b) => Math.max(n, b.number), 0) + 1;
-    const b = { id: 'b' + Date.now().toString(36), number, date, closes, note: (note || '').trim(), show: show !== false, status: 'open', openedAt: new Date().toISOString() };
+    const b = { id: 'b' + Date.now().toString(36), number, date, closes, note: (note || '').trim(), show: show !== false,
+      pickups: pickups ? cleanPickups(pickups) : places().pickups, home: home !== false, status: 'open', openedAt: new Date().toISOString() };
     load().list.push(b); save();
     return clone(b);
   };
 
   const update = (id, fields) => {
     const b = load().list.find(x => x.id === id); if (!b) return null;
-    ['date', 'closes', 'note', 'show'].forEach(k => { if (k in fields) b[k] = k === 'note' ? (fields[k] || '').trim() : fields[k]; });
+    ['date', 'closes', 'note', 'show', 'home'].forEach(k => { if (k in fields) b[k] = k === 'note' ? (fields[k] || '').trim() : fields[k]; });
+    if ('pickups' in fields) b.pickups = cleanPickups(fields.pickups);
     save(); return clone(b);
   };
 
@@ -173,12 +197,13 @@ const Batch = (() => {
     if (b && !b.show) return null;
     const base = b ? { batchId: b.id, number: b.number, date: b.date, dateText: format(b.date), shortDate: format(b.date, false), note: b.note || '',
       closes: b.closes || '', closesText: b.closes ? format(b.closes) : '' } : { dateText: '', closesText: '', note: '' };
+    base.places = places();
     return { ...base, closed: !taking(b), hasOpen: !!b };
   };
 
   const onChange = fn => window.addEventListener('storage', e => { if (e.key === KEY) { memory = null; fn(); } });
 
-  return { all, byId, open, label, taking, create, update, close, seedIfEmpty, assign, current, format, parse, onChange };
+  return { HOME, DEFAULT_PICKUPS, places, placesOf, locationOptions, placesText, all, byId, open, label, taking, create, update, close, seedIfEmpty, assign, current, format, parse, onChange };
 })();
 
 /* ============================================================

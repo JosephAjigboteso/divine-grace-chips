@@ -52,6 +52,8 @@
     const place = o.location === 'Home Delivery' ? `Delivery to: ${o.address || 'your address'}.` : `Pickup: ${o.location}.`;
     return `Hi ${first} 👋, your Divine Grace order ${o.paymentRef || o.ref} will be delivered on ${Batch.format(b.date)}${b.note ? `, ${b.note.charAt(0).toLowerCase() + b.note.slice(1)}` : ''}. ${place}`;
   };
+  // every delivery location used in these orders (they can change from batch to batch)
+  const placeNames = list => [...new Set([...AdminData.LOCATIONS, ...list.map(o => o.location).filter(Boolean)])];
   const waLink = (o, text) => `https://wa.me/${'234' + o.customer.phone.replace(/\D/g, '').replace(/^234/, '').replace(/^0/, '')}?text=${encodeURIComponent(text)}`;
   let range = 30;
 
@@ -218,7 +220,7 @@
 
     // by location (ranked bars, one hue)
     const del = cur.filter(o => o.status === 'delivered');
-    const byLoc = AdminData.LOCATIONS.map(l => ({ name: l, value: del.filter(o => o.location === l).length }))
+    const byLoc = placeNames(del).map(l => ({ name: l, value: del.filter(o => o.location === l).length }))
       .sort((a, b) => b.value - a.value);
     const max = Math.max(1, ...byLoc.map(b => b.value));
     const sum = byLoc.reduce((s, b) => s + b.value, 0) || 1;
@@ -392,7 +394,7 @@
 
     if (status === 'out') {
       // delivery summary: by location, packs to take, then each order
-      const byLoc = AdminData.LOCATIONS.map(l => [l, list.filter(o => o.location === l).length]).filter(([, n]) => n);
+      const byLoc = placeNames(list).map(l => [l, list.filter(o => o.location === l).length]).filter(([, n]) => n);
       const packs = {};
       list.forEach(o => o.items.forEach(it => {
         const k = `${itemName(it)}${it.type ? ` (${it.type})` : ''}`;
@@ -479,6 +481,10 @@
   let openId = null, lastFocus = null;
 
   // "Delivery batch" part of the order details, with the Send date on WhatsApp button
+  // the customer chose a place this batch doesn't offer (e.g. the admin changed the locations)
+  const placeWarn = (o, b) => (b && !Batch.locationOptions(Batch.placesOf(b)).includes(o.location)
+    ? `<p class="d-place-warn"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${esc(o.location)} isn't a delivery location in Batch ${b.number}. Agree a new place with the customer.</p>` : '');
+
   function batchSection(o) {
     const open = Batch.open();
     const sent = o.history.filter(h => h.status === 'date_sent').pop();
@@ -490,7 +496,7 @@
         ${open && Batch.taking(open)
           ? `<a class="btn btn-whatsapp d-send" href="${esc(waLink(o, dateMessage(o, open)))}" target="_blank" rel="noopener" data-send-date="${esc(open.id)}">
                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Send date on WhatsApp</a>
-             <p class="d-muted">Sends <strong>${esc(Batch.label(open))}</strong> and moves this order into that batch.</p>`
+             <p class="d-muted">Sends <strong>${esc(Batch.label(open))}</strong> and moves this order into that batch.</p>${placeWarn(o, open)}`
           : '<p class="d-muted">Open a new batch (Products → Delivery batch) to send this customer a date.</p>'}
       </section>`;
     }
@@ -499,6 +505,7 @@
     return `<section class="d-section d-batch">
       <h3>Delivery batch</h3>
       <p><strong>${esc(Batch.label(b))}</strong>${b.note ? ` · ${esc(b.note)}` : ''}</p>
+      ${!done && b.status === 'open' ? placeWarn(o, b) : ''}
       ${!done && Batch.parse(b.date) >= new Date(new Date().setHours(0, 0, 0, 0))
         ? `<a class="btn btn-whatsapp d-send" href="${esc(waLink(o, dateMessage(o, b)))}" target="_blank" rel="noopener" data-send-date="${esc(b.id)}">
              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> ${sent ? 'Send date again' : 'Send date on WhatsApp'}</a>` : ''}
@@ -644,8 +651,35 @@
     previewBatch();
   }
 
+  // delivery locations for the batch: pickup points + home delivery on/off
+  let pickups = [];
+  const drawPickups = () => {
+    $('bPickups').innerHTML = pickups.length
+      ? pickups.map((name, i) => `<span class="place-chip"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>${esc(name)}<button type="button" data-remove-place="${i}" aria-label="Remove ${esc(name)}" title="Remove"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>`).join('')
+      : '<span class="place-empty">No pickup points. Add one, or offer home delivery only.</span>';
+    previewBatch();
+  };
+  const addPickup = () => {
+    const input = $('bPickupNew'), name = input.value.trim().replace(/\s+/g, ' ');
+    if (!name) return true;
+    if (/^home( delivery)?$/i.test(name)) { toast('Use the “Offer home delivery” switch for home delivery.', 'bad'); return false; }
+    if (pickups.some(x => x.toLowerCase() === name.toLowerCase())) { toast(`${name} is already on the list.`, 'bad'); return false; }
+    pickups.push(name); input.value = ''; drawPickups();
+    return true;
+  };
+  $('bPickupAdd').addEventListener('click', () => { addPickup(); $('bPickupNew').focus(); });
+  $('bPickupNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPickup(); } });
+  $('bPickups').addEventListener('click', e => {
+    const btn = e.target.closest('[data-remove-place]'); if (!btn) return;
+    pickups.splice(Number(btn.dataset.removePlace), 1); drawPickups();
+  });
+
   const fillForm = b => {
     $('bDate').value = b ? b.date : ''; $('bCloses').value = b ? b.closes : ''; $('bNote').value = b ? b.note : ''; $('bShow').checked = b ? b.show !== false : true;
+    // a new batch starts with the last batch's locations
+    const pl = b ? Batch.placesOf(b) : Batch.places();
+    pickups = pl.pickups.slice(); $('bHome').checked = pl.home; $('bPickupNew').value = '';
+    drawPickups();
   };
 
   // what customers will see, built from the form
@@ -660,13 +694,16 @@
     if (closes && Batch.parse(closes) > Batch.parse(date)) warn.push('“Orders close” is after the delivery date.');
     if (closes && Batch.parse(closes) < today) warn.push('Orders for this batch have closed: new orders get the “New batch” tag. Close this batch and start the next one.');
     if (!show) warn.push('The pop-up is switched off.');
+    const places = { pickups, home: $('bHome').checked };
+    if (!pickups.length && !places.home) warn.push('Add at least one pickup point or offer home delivery.');
     p.innerHTML = `<span class="bp-label">Customers will see</span>
       <strong>Next delivery: ${esc(Batch.format(date))}</strong>
       <span>${note ? esc(note) + ' · ' : ''}${closes ? 'Orders close ' + esc(Batch.format(closes)) : 'No closing date'}</span>
+      ${Batch.placesText(places) ? `<span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${esc(Batch.placesText(places))}</span>` : ''}
       ${warn.map(w => `<em><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${w}</em>`).join('')}`;
   }
 
-  ['bDate', 'bCloses', 'bNote', 'bShow'].forEach(id => $(id).addEventListener('input', previewBatch));
+  ['bDate', 'bCloses', 'bNote', 'bShow', 'bHome'].forEach(id => $(id).addEventListener('input', previewBatch));
 
   $('bStart').addEventListener('click', () => {
     batchMode = 'new'; fillForm(null);
@@ -680,7 +717,9 @@
     const date = $('bDate').value, closes = $('bCloses').value;
     if (!date) { toast('Choose the expected delivery date.', 'bad'); $('bDate').focus(); return; }
     if (closes && Batch.parse(closes) > Batch.parse(date)) { toast('“Orders close” must be on or before the delivery date.', 'bad'); return; }
-    const fields = { date, closes, note: $('bNote').value.trim(), show: $('bShow').checked };
+    if (!addPickup()) return;                                            // a typed-in place that wasn't added yet
+    if (!pickups.length && !$('bHome').checked) { toast('Add at least one pickup point or turn on home delivery.', 'bad'); $('bPickupNew').focus(); return; }
+    const fields = { date, closes, note: $('bNote').value.trim(), show: $('bShow').checked, pickups: pickups.slice(), home: $('bHome').checked };
     if (batchMode === 'new') {
       const b = Batch.create(fields);                                   // BACKEND: insert into batches
       productsData.forEach(p => Stock.set(p.id, { status: 'full', types: 'both', qty: {} }));   // every product back to Fully available
