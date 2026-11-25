@@ -21,6 +21,13 @@ A static website (HTML, CSS, JavaScript; no build step) plus a front-end admin d
 | `asset/products/` | One folder of photos per product; see `asset/products/README.md` |
 | `asset/icons/`, `asset/og-image.jpg` | Browser icon and the link-preview card shown on WhatsApp etc. |
 
+## Updating the live site
+
+The pages load their styles and scripts with a version tag, e.g. `style.css?v=20261125`.
+Whenever you change a `.css` or `.js` file, change that tag in **all four** `.html` files
+(any new number works, e.g. today's date). Browsers then fetch the new files straight away
+instead of using an old saved copy, so nobody sees a half-updated page.
+
 ## Before going live
 
 - **Web3Forms key:** replace `YOUR_WEB3FORMS_ACCESS_KEY` in `order.html`.
