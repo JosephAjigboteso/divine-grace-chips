@@ -136,7 +136,7 @@
     overview: ['Overview', 'How the business is doing.'],
     orders: ['Orders', 'Confirm payments and track deliveries.'],
     products: ['Products', 'Prices, weights and what customers can order.'],
-    reviews: ['Reviews', 'Choose the reviews customers see on the website.']
+    reviews: ['Reviews', 'What customers see on the website.']
   };
   const go = view => {
     document.querySelectorAll('.admin-view').forEach(v => { v.hidden = v.dataset.view !== view; });
@@ -495,12 +495,12 @@
     if (awaiting(o)) {
       return `<section class="d-section d-batch is-awaiting">
         <h3>Delivery batch</h3>
-        <p>${batchTag(o)} Ordered after the last batch closed, so this customer doesn’t have a delivery date yet.</p>
+        <p>${batchTag(o)} Ordered between batches: no delivery date yet.</p>
         ${open && Batch.taking(open)
           ? `<a class="btn btn-whatsapp d-send" href="${esc(waLink(o, dateMessage(o, open)))}" target="_blank" rel="noopener" data-send-date="${esc(open.id)}">
                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Send date on WhatsApp</a>
-             <p class="d-muted">Sends <strong>${esc(Batch.label(open))}</strong> and moves this order into that batch.</p>${placeWarn(o, open)}`
-          : '<p class="d-muted">Open a new batch (Products → Delivery batch) to send this customer a date.</p>'}
+             <p class="d-muted">Moves this order into <strong>${esc(Batch.label(open))}</strong>.</p>${placeWarn(o, open)}`
+          : '<p class="d-muted">Open a new batch to send a date.</p>'}
       </section>`;
     }
     const b = batchOf(o);
@@ -624,7 +624,7 @@
       const n = waitingCount();
       $('batchNoneNote').innerHTML = n
         ? `<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span><strong>${n} order${n === 1 ? '' : 's'}</strong> ${n === 1 ? 'is' : 'are'} waiting for a delivery date.</span><button type="button" class="link-btn" data-goto-awaiting>Send dates</button>`
-        : '<i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>No batch is open. New orders will wait for the next batch.</span>';
+        : '<i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>No batch open. New orders wait for the next one.</span>';
       $('batchNoneNote').classList.toggle('is-calm', !n);
     } else if (batchMode === 'new') {
       state.className = 'batch-state is-new'; state.textContent = 'New batch';
@@ -637,7 +637,6 @@
     }
     $('batchNone').hidden = batchMode !== 'none';
     if (batchMode !== 'none') $('batchNoneNote').innerHTML = '';   // no hidden duplicate "Send dates" button
-    $('batchSub').hidden = batchMode === 'none';
     state.hidden = batchMode === 'none';
     $('batchCard').classList.toggle('is-none', batchMode === 'none');
     $('batchForm').hidden = batchMode === 'none';
@@ -650,7 +649,7 @@
     // waiting orders reminder when a batch is open
     const n = waitingCount();
     $('batchWaiting').hidden = !(batchMode === 'open' && n);
-    $('batchWaiting').innerHTML = n ? `<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> <span><strong>${n} order${n === 1 ? '' : 's'}</strong> placed between batches ${n === 1 ? 'is' : 'are'} waiting for a delivery date.</span> <button type="button" class="link-btn" data-goto-awaiting>Send dates</button>` : '';
+    $('batchWaiting').innerHTML = n ? `<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> <span><strong>${n} order${n === 1 ? '' : 's'}</strong> waiting for a delivery date.</span> <button type="button" class="link-btn" data-goto-awaiting>Send dates</button>` : '';
     previewBatch();
   }
 
@@ -659,7 +658,7 @@
   const drawPickups = () => {
     $('bPickups').innerHTML = pickups.length
       ? pickups.map((name, i) => `<span class="place-chip"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>${esc(name)}<button type="button" data-remove-place="${i}" aria-label="Remove ${esc(name)}" title="Remove"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>`).join('')
-      : '<span class="place-empty">No pickup points. Add one, or offer home delivery only.</span>';
+      : '<span class="place-empty">No pickup points yet.</span>';
     previewBatch();
   };
   const addPickup = () => {
@@ -690,12 +689,12 @@
     if (batchMode === 'none') return;
     const date = $('bDate').value, closes = $('bCloses').value, note = $('bNote').value.trim(), show = $('bShow').checked;
     const p = $('batchPreview');
-    if (!date) { p.innerHTML = '<i class="fa-regular fa-calendar" aria-hidden="true"></i> Pick a delivery date to see the customer message.'; return; }
+    if (!date) { p.innerHTML = '<i class="fa-regular fa-calendar" aria-hidden="true"></i> Pick a delivery date.'; return; }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const warn = [];
     if (Batch.parse(date) < today) warn.push('This date has passed.');
     if (closes && Batch.parse(closes) > Batch.parse(date)) warn.push('“Orders close” is after the delivery date.');
-    if (closes && Batch.parse(closes) < today) warn.push('Orders for this batch have closed: new orders get the “New batch” tag. Close this batch and start the next one.');
+    if (closes && Batch.parse(closes) < today) warn.push('Orders have closed. Close this batch and start the next one.');
     if (!show) warn.push('The pop-up is switched off.');
     const places = { pickups, home: $('bHome').checked };
     if (!pickups.length && !places.home) warn.push('Add at least one pickup point or offer home delivery.');
@@ -1098,9 +1097,9 @@
     const list = SiteReviews.all(SAMPLES);
     const live = list.slice(0, LIMIT), older = list.slice(LIMIT);
     $('rvMeter').innerHTML = `<span class="rv-meter-bar"><span style="width:${live.length / LIMIT * 100}%"></span></span>
-      <span><strong>${live.length} of ${LIMIT}</strong> showing${live.length === LIMIT ? ' · the next push moves the 10th one off the site' : ''}</span>`;
+      <span><strong>${live.length} of ${LIMIT}</strong> showing</span>`;
     $('rvLive').innerHTML = live.length ? live.map((r, i) => liveItem(r, i, true)).join('')
-      : '<li class="rv-empty">No reviews on the website. Push one and it appears here.</li>';
+      : '<li class="rv-empty">No reviews on the website yet.</li>';
     $('rvOlderWrap').hidden = !older.length;
     $('rvOlderSum').textContent = `No longer shown (${older.length})`;
     $('rvOlder').innerHTML = older.map((r, i) => liveItem(r, i, false)).join('');
@@ -1120,7 +1119,7 @@
                <button type="button" class="btn btn-primary rv-push" data-rv-push="${esc(o.id)}"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Push</button>`}
         </div>
       </article>`;
-    }).join('') : '<p class="rv-empty">No customer reviews yet. They appear here when customers fill in “Drop a review” on the order page.</p>';
+    }).join('') : '<p class="rv-empty">No customer reviews yet.</p>';
     $('rvMore').hidden = withReview.length <= rvShown;
   }
 

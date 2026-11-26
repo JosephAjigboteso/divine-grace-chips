@@ -516,9 +516,9 @@ function setupOrderPage() {
     $('batchTitle').textContent = b.closed ? 'This batch is now closed' : b.dateText;
     $('batchText').textContent = b.closed
       ? (b.hasOpen && b.closesText
-          ? `Orders for the ${b.dateText} delivery closed on ${b.closesText}. You can still order: your order joins the next delivery batch and we will message you the delivery date on WhatsApp.`
-          : 'Orders for our last delivery batch have closed. You can still order: your order joins the next batch and we will message you the delivery date on WhatsApp.')
-      : 'We deliver in batches: every order placed now is delivered together on this date.';
+          ? `Orders for ${b.dateText} closed on ${b.closesText}. You can still order: we’ll send your delivery date on WhatsApp.`
+          : 'Orders for our last batch have closed. You can still order: we’ll send your delivery date on WhatsApp.')
+      : 'Every order placed now is delivered on this date.';
     const facts = [];
     if (!b.closed && b.note) facts.push(['fa-regular fa-clock', b.note]);
     if (!b.closed && b.closesText) facts.push(['fa-regular fa-calendar-xmark', `Orders close ${b.closesText}`]);

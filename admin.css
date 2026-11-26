@@ -1012,7 +1012,7 @@
   margin-bottom: 14px;
 }
 
-.products-note { font-size: 13px; color: var(--text-muted); max-width: 560px; }
+.products-toolbar { justify-content: flex-end; }
 .products-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 

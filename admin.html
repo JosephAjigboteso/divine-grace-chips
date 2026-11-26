@@ -21,8 +21,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..800,0..100;1,9..144,400..800,0..100&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20261126b">
-  <link rel="stylesheet" href="admin.css?v=20261126b">
+  <link rel="stylesheet" href="style.css?v=20261126c">
+  <link rel="stylesheet" href="admin.css?v=20261126c">
 </head>
 <body class="admin-body">
 
@@ -172,7 +172,7 @@
           <header class="card-head">
             <div>
               <h2 id="batchCardTitle"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> <span id="batchHeading">Delivery batch</span></h2>
-              <p id="batchSub">Customers see the delivery date in a pop-up whenever they open the order page.</p>
+              <p id="batchSub" hidden></p>
             </div>
             <span class="batch-state" id="batchState"></span>
           </header>
@@ -211,7 +211,7 @@
               </div>
             </fieldset>
             <div class="batch-preview" id="batchPreview" aria-live="polite"></div>
-            <p class="batch-reset-note" id="batchResetNote" hidden><i class="fa-solid fa-rotate" aria-hidden="true"></i><span>Opening a batch sets <strong>all products back to Fully available</strong>. You can mark any of them Limited or Unavailable below afterwards.</span></p>
+            <p class="batch-reset-note" id="batchResetNote" hidden><i class="fa-solid fa-rotate" aria-hidden="true"></i><span>Opening a batch sets all products back to <strong>Fully available</strong>.</span></p>
             <div class="batch-waiting" id="batchWaiting" hidden></div>
             <div class="batch-actions">
               <button type="button" class="btn btn-light" id="bCancel" hidden>Cancel</button>
@@ -222,7 +222,6 @@
         </section>
 
         <div class="products-toolbar">
-          <p class="products-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Availability controls what customers can order: <strong>Unavailable</strong> products show as sold out, and <strong>Limited</strong> stock goes down as orders come in. Demo: changes apply to the shop in this browser only, until the backend is connected.</p>
           <div class="products-actions">
             <a class="btn btn-light" href="products.html"><i class="fa-solid fa-store" aria-hidden="true"></i> View shop</a>
             <button type="button" class="btn btn-primary" id="addProductBtn"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add product</button>
@@ -238,7 +237,7 @@
             <header class="card-head">
               <div>
                 <h2><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> <span id="rvFormTitle">Write a review</span></h2>
-                <p>For feedback that came in on WhatsApp, in person, etc. It goes to the top of the website reviews.</p>
+                
               </div>
             </header>
             <div class="rv-fields">
@@ -257,7 +256,7 @@
             <header class="card-head">
               <div>
                 <h2 id="rvLiveTitle"><i class="fa-solid fa-globe" aria-hidden="true"></i> On the website</h2>
-                <p>Newest first. Only the latest 10 are shown: each new push moves the others down one place.</p>
+                <p>Newest first · the latest 10 are shown</p>
               </div>
               <a class="link-btn" href="index.html#reviews">View</a>
             </header>
@@ -273,7 +272,7 @@
             <header class="card-head">
               <div>
                 <h2 id="rvOrdersTitle"><i class="fa-solid fa-receipt" aria-hidden="true"></i> From customers' orders</h2>
-                <p>What customers wrote in "Drop a review" when they ordered. Push the ones you like.</p>
+                <p>From “Drop a review” on the order page</p>
               </div>
             </header>
             <div class="rv-list" id="rvOrders"></div>
@@ -322,7 +321,7 @@
           <div class="photo-grid" id="pPhotos" aria-labelledby="pPhotosLabel"></div>
           <input id="pPhoto" class="visually-hidden" type="file" accept="image/*" multiple>
           <label class="photo-check"><input type="checkbox" id="pWhiten" checked> Make plain backgrounds white</label>
-          <small class="field-hint">Photos are resized and saved as small WebP files automatically. The first photo is the main one; customers swipe through the rest.</small>
+          <small class="field-hint">Saved as small WebP files automatically. The first photo is the main one.</small>
         </div>
         <div class="form-message" id="productFormMsg" role="alert"></div>
       </div>
@@ -351,9 +350,9 @@
   <div class="chart-tooltip" id="chartTooltip" role="status" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="stock.js?v=20261126b"></script>
-  <script src="script.js?v=20261126b"></script>
-  <script src="admin-data.js?v=20261126b"></script>
-  <script src="admin.js?v=20261126b"></script>
+  <script src="stock.js?v=20261126c"></script>
+  <script src="script.js?v=20261126c"></script>
+  <script src="admin-data.js?v=20261126c"></script>
+  <script src="admin.js?v=20261126c"></script>
 </body>
 </html>

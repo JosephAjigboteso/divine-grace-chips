@@ -34,7 +34,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..800,0..100;1,9..144,400..800,0..100&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20261126b">
+  <link rel="stylesheet" href="style.css?v=20261126c">
 </head>
 <body class="order-page has-bottom-nav">
   <!-- ===== HEADER ===== -->
@@ -94,7 +94,7 @@
             <button type="button" class="product-picker-close" id="closePickerBtn" aria-label="Close product list"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           </div>
           <div class="product-options" id="productOptions"></div>
-          <p class="product-picker-hint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Want the same pack in both ripe and unripe? Pick it again and it's added as a separate line.</p>
+          <p class="product-picker-hint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Want both ripe and unripe? Add the pack twice.</p>
         </div>
 
         <button class="btn btn-light add-product-btn" id="addProductBtn" type="button" aria-controls="productPicker" aria-expanded="false" hidden>
@@ -134,7 +134,7 @@
           <div class="field" id="phoneField">
             <label for="phone">Phone Number <span>*</span></label>
             <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="e.g. 08012345678" autocomplete="tel" maxlength="17" required aria-describedby="phoneHint">
-            <small class="field-hint" id="phoneHint">Nigerian mobile number, e.g. 08012345678 or +2348012345678</small>
+            <small class="field-hint" id="phoneHint">e.g. 08012345678</small>
           </div>
 
           <div class="field">
@@ -299,7 +299,7 @@
         <a class="btn btn-whatsapp" id="payWhatsApp" href="#" target="_blank" rel="noopener">
           <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Send my order on WhatsApp
         </a>
-        <p class="pay-wa-note">Optional: sends us your order summary so you also have a copy in your chat.</p>
+        <p class="pay-wa-note">Optional: keeps a copy of your order in your chat.</p>
         <a class="btn btn-light" href="products.html">Continue shopping</a>
         <button class="pay-back" type="button" id="payFinish">Close</button>
       </div>
@@ -325,7 +325,7 @@
     </button>
   </nav>
 
-  <script src="stock.js?v=20261126b"></script>
-  <script src="script.js?v=20261126b"></script>
+  <script src="stock.js?v=20261126c"></script>
+  <script src="script.js?v=20261126c"></script>
 </body>
 </html>
