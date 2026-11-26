@@ -21,8 +21,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..800,0..100;1,9..144,400..800,0..100&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20261125">
-  <link rel="stylesheet" href="admin.css?v=20261125">
+  <link rel="stylesheet" href="style.css?v=20261126">
+  <link rel="stylesheet" href="admin.css?v=20261126">
 </head>
 <body class="admin-body">
 
@@ -70,6 +70,7 @@
         <button type="button" class="admin-nav-link is-active" data-view="overview"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Overview</span></button>
         <button type="button" class="admin-nav-link" data-view="orders"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Orders</span><em class="nav-badge" id="pendingBadge" hidden></em></button>
         <button type="button" class="admin-nav-link" data-view="products"><i class="fa-solid fa-cookie-bite" aria-hidden="true"></i><span>Products</span></button>
+        <button type="button" class="admin-nav-link" data-view="reviews"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i><span>Reviews</span></button>
       </nav>
       <div class="admin-sidebar-foot">
         <a class="admin-side-link" href="products.html"><i class="fa-solid fa-store" aria-hidden="true"></i><span>View shop</span></a>
@@ -229,6 +230,57 @@
         </div>
         <div class="product-admin-list" id="productList"></div>
       </section>
+
+      <!-- ===== REVIEWS ===== -->
+      <section class="admin-view" data-view="reviews" hidden>
+        <div class="reviews-admin">
+          <form class="admin-card rv-write" id="reviewForm" novalidate>
+            <header class="card-head">
+              <div>
+                <h2><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> <span id="rvFormTitle">Write a review</span></h2>
+                <p>For feedback that came in on WhatsApp, in person, etc. It goes to the top of the website reviews.</p>
+              </div>
+            </header>
+            <div class="rv-fields">
+              <label class="pa-field"><span>Customer name <em>*</em></span><input type="text" id="rvName" maxlength="40" placeholder="e.g. Amaka O."></label>
+              <label class="pa-field"><span>Label <small>(optional)</small></span><input type="text" id="rvTag" maxlength="40" placeholder="e.g. Big Jar regular"></label>
+              <label class="pa-field rv-text"><span>Review <em>*</em></span><textarea id="rvText" rows="4" maxlength="400" placeholder="What the customer said"></textarea></label>
+            </div>
+            <div class="rv-actions">
+              <span class="rv-chars" id="rvChars">0 / 400</span>
+              <button type="button" class="btn btn-light" id="rvCancel" hidden>Cancel</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Push</button>
+            </div>
+          </form>
+
+          <section class="admin-card rv-live" aria-labelledby="rvLiveTitle">
+            <header class="card-head">
+              <div>
+                <h2 id="rvLiveTitle"><i class="fa-solid fa-globe" aria-hidden="true"></i> On the website</h2>
+                <p>Newest first. Only the latest 10 are shown: each new push moves the others down one place.</p>
+              </div>
+              <a class="link-btn" href="index.html#reviews">View</a>
+            </header>
+            <div class="rv-meter" id="rvMeter"></div>
+            <ol class="rv-list" id="rvLive"></ol>
+            <details class="rv-older" id="rvOlderWrap" hidden>
+              <summary id="rvOlderSum"></summary>
+              <ol class="rv-list" id="rvOlder"></ol>
+            </details>
+          </section>
+
+          <section class="admin-card rv-orders" aria-labelledby="rvOrdersTitle">
+            <header class="card-head">
+              <div>
+                <h2 id="rvOrdersTitle"><i class="fa-solid fa-receipt" aria-hidden="true"></i> From customers' orders</h2>
+                <p>What customers wrote in "Drop a review" when they ordered. Push the ones you like.</p>
+              </div>
+            </header>
+            <div class="rv-list" id="rvOrders"></div>
+            <button type="button" class="link-btn rv-more" id="rvMore" hidden>Show more</button>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -299,9 +351,9 @@
   <div class="chart-tooltip" id="chartTooltip" role="status" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="stock.js?v=20261125"></script>
-  <script src="script.js?v=20261125"></script>
-  <script src="admin-data.js?v=20261125"></script>
-  <script src="admin.js?v=20261125"></script>
+  <script src="stock.js?v=20261126"></script>
+  <script src="script.js?v=20261126"></script>
+  <script src="admin-data.js?v=20261126"></script>
+  <script src="admin.js?v=20261126"></script>
 </body>
 </html>

@@ -135,7 +135,8 @@
   const VIEWS = {
     overview: ['Overview', 'How the business is doing.'],
     orders: ['Orders', 'Confirm payments and track deliveries.'],
-    products: ['Products', 'Prices, weights and what customers can order.']
+    products: ['Products', 'Prices, weights and what customers can order.'],
+    reviews: ['Reviews', 'Choose the reviews customers see on the website.']
   };
   const go = view => {
     document.querySelectorAll('.admin-view').forEach(v => { v.hidden = v.dataset.view !== view; });
@@ -143,6 +144,7 @@
     $('viewTitle').textContent = VIEWS[view][0];
     $('viewSub').textContent = VIEWS[view][1];
     if (view === 'overview') renderOverview();
+    if (view === 'reviews') renderReviews();
     try { history.replaceState(null, '', '#' + view); } catch (e) {}
     window.scrollTo({ top: 0 });
   };
@@ -155,6 +157,7 @@
     renderOrders();
     renderProducts();
     startBatchCard();
+    renderReviews();
     const start = (location.hash || '').slice(1);
     go(VIEWS[start] ? start : 'overview');
   }
@@ -163,7 +166,7 @@
   if (typeof ShopOrders !== 'undefined') ShopOrders.onChange(async () => {
     if ($('appView').hidden) return;
     orders = await AdminData.getOrders();
-    updateBadge(); renderOrders(); renderBatchCard();
+    updateBadge(); renderOrders(); renderBatchCard(); renderReviews();
     if (!document.querySelector('[data-view="overview"].admin-view').hidden) renderOverview();
     toast('New order received');
   });
@@ -1061,6 +1064,118 @@
     renderProducts(); closeModal();
     toast(`${name} ${editing ? 'updated' : 'added'}. It's in the shop now.`);
   });
+
+  /* ======================= reviews on the website =======================
+     Push = put a review at the top of the home page reviews. The site shows
+     the newest SiteReviews.SHOW_LIMIT (10); older ones drop off but stay listed here.
+     BACKEND: insert into / delete from a `reviews` table. */
+  const SAMPLES = typeof DEFAULT_REVIEWS !== 'undefined' ? DEFAULT_REVIEWS : [];
+  const LIMIT = SiteReviews.SHOW_LIMIT;
+  let rvEditing = null;          // the order whose review is being edited before pushing
+  let rvShown = 10;              // how many order reviews to list
+
+  // "Ngozi Bello" → "Ngozi B." (customers' full names stay private)
+  const shortName = name => { const w = String(name || '').trim().split(/\s+/); return w.length > 1 ? `${w[0]} ${w[w.length - 1][0].toUpperCase()}.` : w[0] || 'Customer'; };
+  const orderLabel = o => {
+    const main = o.items && o.items[0] ? o.items[0].name : '';
+    return [main, o.orderType && o.orderType !== 'Personal' ? `${o.orderType} order` : ''].filter(Boolean).join(' · ');
+  };
+  const rvDate = r => r.date || (r.at ? fmtDate(r.at) : '');
+
+  const liveItem = (r, i, live) => `
+    <li class="rv-item${live ? '' : ' is-off'}">
+      <span class="rv-pos" aria-label="${live ? `Position ${i + 1}` : 'Not shown'}">${live ? i + 1 : '–'}</span>
+      <div class="rv-body">
+        <p class="rv-quote">“${esc(r.text)}”</p>
+        <p class="rv-meta"><strong>${esc(r.name)}</strong>${r.tag ? ` · ${esc(r.tag)}` : ''} · ${esc(rvDate(r))}${r.sample ? ' · <em class="rv-sample">Sample</em>' : ''}</p>
+      </div>
+      <div class="rv-btns">
+        ${i > 0 || !live ? `<button type="button" class="pa-tool" data-rv-top="${esc(r.id)}" aria-label="Push to the top again" title="Push to the top again"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>` : ''}
+        <button type="button" class="pa-tool is-danger" data-rv-del="${esc(r.id)}" aria-label="Remove review by ${esc(r.name)}" title="Remove"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+      </div>
+    </li>`;
+
+  function renderReviews() {
+    const list = SiteReviews.all(SAMPLES);
+    const live = list.slice(0, LIMIT), older = list.slice(LIMIT);
+    $('rvMeter').innerHTML = `<span class="rv-meter-bar"><span style="width:${live.length / LIMIT * 100}%"></span></span>
+      <span><strong>${live.length} of ${LIMIT}</strong> showing${live.length === LIMIT ? ' · the next push moves the 10th one off the site' : ''}</span>`;
+    $('rvLive').innerHTML = live.length ? live.map((r, i) => liveItem(r, i, true)).join('')
+      : '<li class="rv-empty">No reviews on the website. Push one and it appears here.</li>';
+    $('rvOlderWrap').hidden = !older.length;
+    $('rvOlderSum').textContent = `No longer shown (${older.length})`;
+    $('rvOlder').innerHTML = older.map((r, i) => liveItem(r, i, false)).join('');
+
+    const withReview = orders.filter(o => (o.review || '').trim()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    $('rvOrders').innerHTML = withReview.length ? withReview.slice(0, rvShown).map(o => {
+      const pushed = SiteReviews.isPushed(o.id, SAMPLES);
+      return `<article class="rv-item rv-order">
+        <div class="rv-body">
+          <p class="rv-quote">“${esc(o.review)}”</p>
+          <p class="rv-meta"><strong>${esc(o.customer.name)}</strong> · ${esc(o.paymentRef || o.ref)} · ${esc(fmtDate(o.createdAt))}${orderLabel(o) ? ` · ${esc(orderLabel(o))}` : ''}</p>
+        </div>
+        <div class="rv-btns">
+          ${pushed
+            ? '<span class="rv-done"><i class="fa-solid fa-check" aria-hidden="true"></i> Pushed</span>'
+            : `<button type="button" class="pa-tool" data-rv-edit="${esc(o.id)}" aria-label="Edit before pushing" title="Edit before pushing"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+               <button type="button" class="btn btn-primary rv-push" data-rv-push="${esc(o.id)}"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Push</button>`}
+        </div>
+      </article>`;
+    }).join('') : '<p class="rv-empty">No customer reviews yet. They appear here when customers fill in “Drop a review” on the order page.</p>';
+    $('rvMore').hidden = withReview.length <= rvShown;
+  }
+
+  // push a review and tell the admin what happened
+  const pushReview = review => {
+    const before = SiteReviews.shown(SAMPLES);
+    const r = SiteReviews.push(review, SAMPLES);
+    if (!r) { toast('Could not save. The browser storage is full.', 'bad'); return false; }
+    const dropped = before.length === LIMIT ? before[LIMIT - 1] : null;
+    renderReviews();
+    toast(`${review.name}'s review is now #1 on the website${dropped && dropped.id !== r.id ? ` · ${dropped.name}'s moved off` : ''}`);
+    return true;
+  };
+
+  const resetReviewForm = () => {
+    rvEditing = null; $('reviewForm').reset(); $('rvChars').textContent = `0 / 400`;
+    $('rvFormTitle').textContent = 'Write a review'; $('rvCancel').hidden = true;
+  };
+
+  $('rvText').addEventListener('input', () => { $('rvChars').textContent = `${$('rvText').value.length} / 400`; });
+  $('rvCancel').addEventListener('click', resetReviewForm);
+  $('reviewForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('rvName').value.trim(), text = $('rvText').value.trim().replace(/\s+/g, ' ');
+    if (!name || !text) { toast('Add the customer name and the review.', 'bad'); (name ? $('rvText') : $('rvName')).focus(); return; }
+    if (pushReview({ name, tag: $('rvTag').value.trim(), text, ...(rvEditing ? { orderId: rvEditing } : {}) })) resetReviewForm();
+  });
+
+  document.querySelector('.reviews-admin').addEventListener('click', async e => {
+    const push = e.target.closest('[data-rv-push]'), edit = e.target.closest('[data-rv-edit]');
+    const top = e.target.closest('[data-rv-top]'), del = e.target.closest('[data-rv-del]');
+    if (push || edit) {
+      const o = orders.find(x => x.id === (push || edit).dataset[push ? 'rvPush' : 'rvEdit']); if (!o) return;
+      const review = { name: shortName(o.customer.name), tag: orderLabel(o), text: o.review.trim(), orderId: o.id };
+      if (push) { pushReview(review); return; }
+      rvEditing = o.id;
+      $('rvName').value = review.name; $('rvTag').value = review.tag; $('rvText').value = review.text;
+      $('rvChars').textContent = `${review.text.length} / 400`;
+      $('rvFormTitle').textContent = `Edit ${review.name}'s review`; $('rvCancel').hidden = false;
+      $('reviewForm').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('rvText').focus({ preventScroll: true });
+    } else if (top) {
+      const r = SiteReviews.all(SAMPLES).find(x => x.id === top.dataset.rvTop); if (!r) return;
+      SiteReviews.remove(r.id, SAMPLES);
+      const { id, at, ...rest } = r;
+      pushReview(rest);
+    } else if (del) {
+      const r = SiteReviews.all(SAMPLES).find(x => x.id === del.dataset.rvDel); if (!r) return;
+      if (!(await askConfirm({ title: `Remove ${r.name}'s review?`, text: 'It comes off the website. The next review moves up to take its place.', yes: 'Remove review', danger: true }))) return;
+      SiteReviews.remove(r.id, SAMPLES); renderReviews();
+      toast('Review removed from the website');
+    }
+  });
+  $('rvMore').addEventListener('click', () => { rvShown += 20; renderReviews(); });
+  SiteReviews.onChange(renderReviews);
 
   /* ======================= shared keyboard ======================= */
   document.addEventListener('keydown', e => {

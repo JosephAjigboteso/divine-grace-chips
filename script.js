@@ -976,11 +976,11 @@ function setupCounters() {
 
 /* ---------- CUSTOMER REVIEWS DATA ---------- */
 /*
- * Reviews are rendered from this array.
- * Later, replace the array with a `fetch('/api/reviews')` call
- * and pass the resulting array into `renderReviews()`.
+ * Sample reviews, shown until the admin pushes real ones
+ * (Admin → Reviews → Push). The home page shows the newest 10 pushed reviews.
+ * ⚠ These samples are placeholders: remove them in the admin once you have real reviews.
  */
-const reviews = [
+const DEFAULT_REVIEWS = [
   {
     name: 'Amaka O.',
     tag: 'Big Jar regular',
@@ -1012,6 +1012,11 @@ const reviews = [
     text: 'Quick response on WhatsApp, fast delivery, and the chips arrived crisp and well packed. Will definitely order again.'
   }
 ];
+DEFAULT_REVIEWS.forEach((r, i) => { r.id = 'sample-' + (i + 1); r.sample = true; });
+
+// the reviews the home page shows: the newest 10 the admin pushed
+const reviewDate = r => r.date || (r.at ? new Date(r.at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '');
+const reviews = typeof SiteReviews !== 'undefined' ? SiteReviews.shown(DEFAULT_REVIEWS) : DEFAULT_REVIEWS;
 
 /* ---------- REVIEWS CAROUSEL ----------
    Featured quote that cross-fades; story-style progress bars advance
@@ -1049,7 +1054,7 @@ function setupReviewsCarousel() {
           <span class="review-name">${escapeHtml(r.name)}</span>
           ${r.tag ? `<span class="review-tag">${escapeHtml(r.tag)}</span>` : ''}
         </span>
-        <span class="review-date">${escapeHtml(r.date)}</span>
+        <span class="review-date">${escapeHtml(reviewDate(r))}</span>
       </figcaption>
     </figure>`).join('');
 

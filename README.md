@@ -38,6 +38,8 @@ instead of using an old saved copy, so nobody sees a half-updated page.
 - **Link preview image:** in the `<head>` of `index.html`, `products.html` and `order.html`, change
   `og:image` from `asset/og-image.jpg` to the full address once the site is live
   (e.g. `https://your-site.com/asset/og-image.jpg`). WhatsApp only shows the preview with a full address.
+- **Sample reviews:** the home page starts with 5 sample reviews. Remove them in **Admin → Reviews** (bin icon)
+  once you have pushed real ones.
 - **Admin:** `admin.html` uses a demo sign-in (`admin@divinegrace.ng` / `demo1234`) and sample orders saved
   in the browser only. Do not rely on it until it is connected to a backend (below).
 
@@ -55,6 +57,7 @@ usable straight from this static site.
 | `products` | name, category, price, weight, description, available |
 | `product_images` | product photos, in order (Supabase Storage) |
 | `orders` | customer, phone, order type, delivery location, address, review, total, payment reference, status |
+| `reviews` | reviews pushed to the home page: name, label, text, date, order (if it came from one). The site shows the newest 10 |
 | `order_items` | product, ripe/unripe, quantity, price at time of order |
 | `order_status_history` | each status change with its time (feeds the delivery charts) |
 | `stock` | per product: status (full / limited / out), ripe-unripe availability, packs left per type |

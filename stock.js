@@ -244,3 +244,36 @@ const Catalog = (() => {
     onChange: fn => window.addEventListener('storage', e => { if (e.key === KEY) fn(); })
   };
 })();
+
+/* ============================================================
+   REVIEWS ON THE WEBSITE — what the admin has pushed
+   ------------------------------------------------------------
+   The admin pushes a review (from an order's "Drop a review" box, or one
+   typed in) and it goes to the top of the home page reviews. Only the
+   newest SHOW_LIMIT are shown; older ones stay in the list but drop off
+   the site. Each: { id, name, tag, text, at (ISO date), orderId? }.
+   Until the admin pushes anything, the home page shows the sample
+   reviews in script.js. Demo storage: this browser. BACKEND: a `reviews` table.
+   ============================================================ */
+const SiteReviews = (() => {
+  const KEY = 'dg-reviews-v1';
+  const SHOW_LIMIT = 10;
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
+  const write = list => { try { localStorage.setItem(KEY, JSON.stringify(list)); return true; } catch (e) { return false; } };
+  // everything pushed so far, newest first (the samples count as already pushed)
+  const all = defaults => JSON.parse(JSON.stringify(read() || defaults || []));
+  return {
+    SHOW_LIMIT,
+    all,
+    shown: defaults => all(defaults).slice(0, SHOW_LIMIT),
+    push: (review, defaults) => {
+      const list = all(defaults);
+      const r = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), at: new Date().toISOString(), ...review };
+      list.unshift(r);
+      return write(list) ? r : null;
+    },
+    remove: (id, defaults) => write(all(defaults).filter(r => r.id !== id)),
+    isPushed: (orderId, defaults) => all(defaults).some(r => r.orderId && r.orderId === orderId),
+    onChange: fn => window.addEventListener('storage', e => { if (e.key === KEY) fn(); })
+  };
+})();
