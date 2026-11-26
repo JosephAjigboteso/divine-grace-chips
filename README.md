@@ -38,6 +38,8 @@ instead of using an old saved copy, so nobody sees a half-updated page.
 - **Link preview image:** in the `<head>` of `index.html`, `products.html` and `order.html`, change
   `og:image` from `asset/og-image.jpg` to the full address once the site is live
   (e.g. `https://your-site.com/asset/og-image.jpg`). WhatsApp only shows the preview with a full address.
+- **Instagram & Facebook:** the footer icons show "Coming soon" for now. In the footer of `index.html`,
+  `products.html` and `order.html`, replace each `href="#"` with your page address and delete `data-soon`.
 - **Sample reviews:** the home page starts with 5 sample reviews. Remove them in **Admin → Reviews** (bin icon)
   once you have pushed real ones.
 - **Admin:** `admin.html` uses a demo sign-in (`admin@divinegrace.ng` / `demo1234`) and sample orders saved

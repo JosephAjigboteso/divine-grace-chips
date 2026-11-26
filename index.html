@@ -34,7 +34,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..800,0..100;1,9..144,400..800,0..100&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20261126c">
+  <link rel="stylesheet" href="style.css?v=20261126d">
 </head>
 <body class="home-page has-bottom-nav">
   <!-- ===== HEADER ===== -->
@@ -362,40 +362,46 @@
   </main>
 
   <!-- ===== FOOTER ===== -->
-  <footer>
+  <footer class="site-footer">
     <div class="container footer-grid">
-      <div>
-        <a class="logo" href="index.html" aria-label="Divine Grace Chips home">
+      <div class="footer-brand">
+        <a class="logo footer-logo" href="index.html" aria-label="Divine Grace Chips home">
           <img src="asset/logo.webp" alt="Divine Grace Chips" class="logo-image">
           <span class="logo-text">Divine Grace <strong>Chips</strong></span>
         </a>
-        <p>Made with care. Seasoned to perfection. Always fresh.</p>
+        <p class="footer-tagline">Plantain &amp; potato chips, made with care in Lagos.</p>
+        <p class="footer-batch" data-footer-batch hidden>
+          <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
+          <span></span>
+        </p>
+        <!-- SOCIAL LINKS: replace each href="#" with the page address and delete data-soon -->
+        <div class="footer-social">
+          <a href="#" data-soon target="_blank" rel="noopener noreferrer" aria-label="Instagram (coming soon)" title="Instagram: coming soon"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="#" data-soon target="_blank" rel="noopener noreferrer" aria-label="Facebook (coming soon)" title="Facebook: coming soon"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+        </div>
       </div>
-      <div>
+
+      <nav class="footer-col footer-explore" aria-label="Footer">
         <h4>Explore</h4>
         <a href="index.html">Home</a>
         <a href="products.html">Products</a>
+        <a href="index.html#reviews">Reviews</a>
         <a href="order.html">Place Order</a>
-      </div>
-      <div>
+      </nav>
+
+      <div class="footer-col footer-contact">
         <h4>Contact</h4>
-        <a class="contact-link" href="tel:08157255322">
-          <i class="fa-solid fa-phone" aria-hidden="true"></i>
-          <span>08157255322</span>
-        </a>
-        <a class="contact-link" href="tel:08060428328">
-          <i class="fa-solid fa-phone" aria-hidden="true"></i>
-          <span>08060428328</span>
-        </a>
-        <a class="contact-link" href="https://wa.me/2348157255322" target="_blank" rel="noopener noreferrer">
+        <a class="contact-link" href="tel:+2348157255322"><i class="fa-solid fa-phone" aria-hidden="true"></i><span>0815 725 5322</span></a>
+        <a class="contact-link" href="tel:+2348060428328"><i class="fa-solid fa-phone" aria-hidden="true"></i><span>0806 042 8328</span></a>
+        <a class="contact-link" href="tel:+2348121329779"><i class="fa-solid fa-phone" aria-hidden="true"></i><span>0812 132 9779</span></a>
+        <a class="footer-wa" href="https://wa.me/2348157255322" target="_blank" rel="noopener noreferrer">
           <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-          <span>WhatsApp us</span>
+          <span>Chat on WhatsApp</span>
         </a>
       </div>
     </div>
     <div class="container footer-bottom">
       <span>© <span id="year"></span> Divine Grace Chips</span>
-      <span>Freshness in every pack.</span>
     </div>
   </footer>
   <!-- ===== MOBILE BOTTOM NAV (appears on scroll) ===== -->
@@ -417,7 +423,7 @@
     </button>
   </nav>
 
-  <script src="stock.js?v=20261126c"></script>
-  <script src="script.js?v=20261126c"></script>
+  <script src="stock.js?v=20261126d"></script>
+  <script src="script.js?v=20261126d"></script>
 </body>
 </html>

@@ -1302,4 +1302,31 @@ document.addEventListener('DOMContentLoaded', () => {
   setupProductImageViewer();
   setupNavActiveOnClick();
   document.querySelectorAll('#year').forEach(el => el.textContent = new Date().getFullYear());
+  setupFooter();
 });
+
+/* ---------- FOOTER ----------
+   Shows the next delivery from the admin's open batch (hidden when no batch
+   is taking orders), and a "Coming soon" bubble on social icons whose
+   links aren't ready yet (href="#" with data-soon). */
+function setupFooter() {
+  const line = document.querySelector('[data-footer-batch]');
+  const fill = () => {
+    if (!line || typeof Batch === 'undefined') return;
+    const b = Batch.current();
+    const show = b && b.hasOpen && !b.closed;
+    line.hidden = !show;
+    if (show) line.querySelector('span').textContent = `Next delivery ${b.shortDate}${b.closes ? ` · order by ${Batch.format(b.closes, false)}` : ''}`;
+  };
+  fill();
+  if (typeof Batch !== 'undefined') Batch.onChange(fill);
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[data-soon]');
+    if (!a) return;
+    e.preventDefault();
+    a.classList.add('show-soon');
+    clearTimeout(a._soon);
+    a._soon = setTimeout(() => a.classList.remove('show-soon'), 1600);
+  });
+}
