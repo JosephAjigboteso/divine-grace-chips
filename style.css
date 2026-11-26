@@ -2965,22 +2965,6 @@ footer {
 [data-theme="dark"] .footer-social a { background: #1d1a16; border-color: #2f2b26; color: #e9e1d2; }
 [data-theme="dark"] .footer-social a:hover,
 [data-theme="dark"] .footer-social a:focus-visible { background: var(--primary); color: #14120f; border-color: var(--primary); }
-/* "Coming soon" bubble while the links aren't ready */
-.footer-social a.show-soon::after {
-  content: "Coming soon";
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 5px 9px;
-  border-radius: 8px;
-  background: var(--text);
-  color: var(--background);
-  font: 600 11px var(--font-body);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 .footer-col { display: grid; align-content: start; justify-items: start; }
 
 .footer-col h4 {

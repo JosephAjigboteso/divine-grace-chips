@@ -1307,8 +1307,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ---------- FOOTER ----------
    Shows the next delivery from the admin's open batch (hidden when no batch
-   is taking orders), and a "Coming soon" bubble on social icons whose
-   links aren't ready yet (href="#" with data-soon). */
+   is taking orders). Social icons whose links aren't ready yet
+   (href="#" with data-soon) do nothing when tapped. */
 function setupFooter() {
   const line = document.querySelector('[data-footer-batch]');
   const fill = () => {
@@ -1321,12 +1321,6 @@ function setupFooter() {
   fill();
   if (typeof Batch !== 'undefined') Batch.onChange(fill);
 
-  document.addEventListener('click', e => {
-    const a = e.target.closest('a[data-soon]');
-    if (!a) return;
-    e.preventDefault();
-    a.classList.add('show-soon');
-    clearTimeout(a._soon);
-    a._soon = setTimeout(() => a.classList.remove('show-soon'), 1600);
-  });
+  // social icons without a real link yet do nothing when tapped
+  document.addEventListener('click', e => { if (e.target.closest('a[data-soon]')) e.preventDefault(); });
 }
