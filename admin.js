@@ -702,7 +702,6 @@
     p.innerHTML = `<span class="bp-label">Customers will see</span>
       <strong>Next delivery: ${esc(Batch.format(date))}</strong>
       <span>${note ? esc(note) + ' · ' : ''}${closes ? 'Orders close ' + esc(Batch.format(closes)) : 'No closing date'}</span>
-      ${Batch.placesText(places) ? `<span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${esc(Batch.placesText(places))}</span>` : ''}
       ${warn.map(w => `<em><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${w}</em>`).join('')}`;
   }
 

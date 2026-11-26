@@ -522,8 +522,6 @@ function setupOrderPage() {
     const facts = [];
     if (!b.closed && b.note) facts.push(['fa-regular fa-clock', b.note]);
     if (!b.closed && b.closesText) facts.push(['fa-regular fa-calendar-xmark', `Orders close ${b.closesText}`]);
-    const where = Batch.placesText(b.places);
-    if (where) facts.push(['fa-solid fa-location-dot', where]);
     $('batchFacts').innerHTML = facts.map(([icon, text]) => `<li><i class="${icon}" aria-hidden="true"></i><span></span></li>`).join('');
     [...$('batchFacts').children].forEach((li, i) => { li.querySelector('span').textContent = facts[i][1]; });
     return b;
