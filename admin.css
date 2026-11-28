@@ -1038,8 +1038,8 @@
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: #ffffff;
-  border: 1px solid var(--border);
+  background: var(--tile-bg, #ffffff);
+  border: 1px solid var(--tile-border, var(--border));
   color: var(--text-muted);
   overflow: hidden;
 }
@@ -1331,7 +1331,7 @@
   background: var(--surface-alt);
   overflow: hidden;
 }
-.photo-tile img { width: 100%; height: 100px; object-fit: contain; background: #fff; }
+.photo-tile img { width: 100%; height: 100px; object-fit: contain; background: var(--tile-bg, #fff); }
 .photo-tile.is-main { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
 .photo-tile figcaption { padding: 6px 8px 7px; font-size: 10.5px; line-height: 1.35; color: var(--text-muted); }
 .photo-tile figcaption .is-kept { color: var(--warning); }
