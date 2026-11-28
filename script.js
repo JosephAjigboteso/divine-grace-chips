@@ -301,7 +301,7 @@ function setupOrderPage() {
       const badge = hasStock() ? Stock.label(p) : null;
       return `
       <button type="button" class="product-option${out ? ' is-sold-out' : ''}" data-id="${p.id}"${out ? ' disabled aria-disabled="true"' : ''}>
-        <img src="${p.image}" alt="">
+        <img src="${p.image}" alt="" loading="lazy" decoding="async">
         <span>${p.name}<small>${out ? 'Sold out' : money.format(p.price) + (badge ? ` · ${badge.text}` : '')}</small></span>
         <i class="fa-solid fa-circle-check product-option-check" aria-hidden="true"></i>
       </button>`;
@@ -1195,11 +1195,11 @@ function setupProductImageViewer() {
 
     track.innerHTML = photos.map((src, i) => `
       <div class="pv-slide${/\.(png|webp)$|^data:image\//i.test(src) ? ' is-cutout' : ''}" role="group" aria-label="Photo ${i + 1} of ${photos.length}">
-        <img src="${src}" alt="${product.name}${i ? ` — photo ${i + 1}` : ''}" draggable="false">
+        <img src="${src}" alt="${product.name}${i ? ` — photo ${i + 1}` : ''}" draggable="false"${i ? ' loading="lazy"' : ''}>
       </div>`).join('');
     thumbs.innerHTML = single ? '' : photos.map((src, i) => `
       <button type="button" class="pv-thumb${/\.(png|webp)$|^data:image\//i.test(src) ? ' is-cutout' : ''}" aria-label="Show photo ${i + 1}">
-        <img src="${src}" alt="">
+        <img src="${src}" alt="" loading="lazy" decoding="async">
       </button>`).join('');
     [...thumbs.children].forEach((t, i) => t.addEventListener('click', () => go(i)));
 
@@ -1303,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNavActiveOnClick();
   document.querySelectorAll('#year').forEach(el => el.textContent = new Date().getFullYear());
   setupFooter();
+  setupLateImages();
 });
 
 /* ---------- FOOTER ----------
@@ -1323,4 +1324,18 @@ function setupFooter() {
 
   // social icons without a real link yet do nothing when tapped
   document.addEventListener('click', e => { if (e.target.closest('a[data-soon]')) e.preventDefault(); });
+}
+
+/* ---------- LATE IMAGES ----------
+   Pictures inside graphics (e.g. the courier in the delivery map) would
+   otherwise download straight away and slow down the hero photo. They have
+   data-href instead of href and get it when you scroll near them. */
+function setupLateImages() {
+  const items = [...document.querySelectorAll('image[data-href]')];
+  const show = el => { el.setAttribute('href', el.dataset.href); el.removeAttribute('data-href'); };
+  if (!('IntersectionObserver' in window)) { items.forEach(show); return; }
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    if (e.isIntersecting) { show(e.target); io.unobserve(e.target); }
+  }), { rootMargin: '600px 0px' });
+  items.forEach(el => io.observe(el));
 }

@@ -30,11 +30,14 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- the hero photo is the first thing people see: fetch it first -->
+  <link rel="preload" as="image" href="asset/hero-chips-900.webp" media="(max-width: 700px)" fetchpriority="high">
+  <link rel="preload" as="image" href="asset/hero-chips.webp" media="(min-width: 701px)" fetchpriority="high">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..800,0..100;1,9..144,400..800,0..100&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20261126e">
+  <link rel="stylesheet" href="style.css?v=20261128">
 </head>
 <body class="home-page has-bottom-nav">
   <!-- ===== HEADER ===== -->
@@ -101,7 +104,11 @@
     </div>
 
     <div class="hero-visual reveal">
-      <img src="asset/hero-chips.webp" alt="Divine Grace plantain chips spilling from a pack" class="hero-photo">
+      <!-- phones (up to 700px wide) get the lighter 900px photo; bigger screens the full one -->
+      <picture class="hero-picture">
+        <source media="(max-width: 700px)" srcset="asset/hero-chips-900.webp" width="900" height="600">
+        <img src="asset/hero-chips.webp" alt="Divine Grace plantain chips spilling from a pack" class="hero-photo" width="1536" height="1024" fetchpriority="high">
+      </picture>
       <div class="floating-badge" aria-live="polite">
         <span class="badge-icon"><i class="fa-solid fa-leaf" aria-hidden="true"></i></span>
         <strong class="badge-title">Always Fresh</strong>
@@ -122,27 +129,27 @@
 
     <div class="collage-stage" data-collage-stage>
       <figure class="collage-item" data-pos="top">
-        <img src="asset/products/potato-dozen/1.webp" alt="Divine Grace plantain chips pack">
+        <img loading="lazy" decoding="async" fetchpriority="low" src="asset/products/potato-dozen/1.webp" alt="Divine Grace plantain chips pack">
       </figure>
 
       <figure class="collage-item" data-pos="topright">
-        <img src="asset/products/small-jar/1.webp" alt="Divine Grace jars">
+        <img loading="lazy" decoding="async" fetchpriority="low" src="asset/products/small-jar/1.webp" alt="Divine Grace jars">
       </figure>
 
       <figure class="collage-item" data-pos="bottomright">
-        <img src="asset/products/refill-4000/1.webp" alt="Divine Grace potato chips pack">
+        <img loading="lazy" decoding="async" fetchpriority="low" src="asset/products/refill-4000/1.webp" alt="Divine Grace potato chips pack">
       </figure>
 
       <figure class="collage-item" data-pos="bottom">
-        <img src="asset/products/refill-2000/1.webp" alt="Divine Grace plantain refill packs">
+        <img loading="lazy" decoding="async" fetchpriority="low" src="asset/products/refill-2000/1.webp" alt="Divine Grace plantain refill packs">
       </figure>
 
       <figure class="collage-item" data-pos="bottomleft">
-        <img src="asset/products/big-jar/1.webp" alt="Divine Grace refill pack">
+        <img loading="lazy" decoding="async" fetchpriority="low" src="asset/products/big-jar/1.webp" alt="Divine Grace refill pack">
       </figure>
 
       <figure class="collage-item" data-pos="topleft">
-        <img src="asset/products/refill-6000/1.webp" alt="Divine Grace big refill">
+        <img loading="lazy" decoding="async" fetchpriority="low" src="asset/products/refill-6000/1.webp" alt="Divine Grace big refill">
       </figure>
     </div>
 
@@ -275,14 +282,14 @@
               <circle class="dl-courier-ring" r="23"/>
               <clipPath id="dl-courier-clip"><circle r="19"/></clipPath>
               <circle r="19" class="dl-courier-bg"/>
-              <image href="asset/products/ziploc/1.webp" x="-17" y="-19" width="34" height="40" preserveAspectRatio="xMidYMid meet" clip-path="url(#dl-courier-clip)"/>
+              <image data-href="asset/products/ziploc/1.webp" x="-17" y="-19" width="34" height="40" preserveAspectRatio="xMidYMid meet" clip-path="url(#dl-courier-clip)"/>
             </g>
           </svg>
 
           <!-- status card -->
           <div class="dl-card" aria-live="polite">
             <div class="dl-card-top">
-              <img class="dl-card-thumb" src="asset/products/ziploc/1.webp" alt="" width="44" height="44">
+              <img class="dl-card-thumb" loading="lazy" decoding="async" fetchpriority="low" src="asset/products/ziploc/1.webp" alt="" width="44" height="44">
               <div class="dl-card-text">
                 <span class="dl-card-kicker">Divine Grace delivery</span>
                 <strong class="dl-card-status" data-dl-status>Order picked up</strong>
@@ -366,7 +373,7 @@
     <div class="container footer-grid">
       <div class="footer-brand">
         <a class="logo footer-logo" href="index.html" aria-label="Divine Grace Chips home">
-          <img src="asset/logo.webp" alt="Divine Grace Chips" class="logo-image">
+          <img loading="lazy" decoding="async" src="asset/logo.webp" alt="Divine Grace Chips" class="logo-image">
           <span class="logo-text">Divine Grace <strong>Chips</strong></span>
         </a>
         <p class="footer-tagline">Plantain &amp; potato chips, made with care in Lagos.</p>
@@ -423,7 +430,7 @@
     </button>
   </nav>
 
-  <script src="stock.js?v=20261126e"></script>
-  <script src="script.js?v=20261126e"></script>
+  <script src="stock.js?v=20261128"></script>
+  <script src="script.js?v=20261128"></script>
 </body>
 </html>

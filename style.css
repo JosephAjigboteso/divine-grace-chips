@@ -474,6 +474,9 @@ body {
   place-items: center;
 }
 
+/* the <picture> wrapper takes no space: the photo lays out exactly as before */
+.hero-picture { display: contents; }
+
 .hero-photo {
   position: absolute;
   top: 0;

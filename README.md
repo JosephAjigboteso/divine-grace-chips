@@ -28,6 +28,9 @@ Whenever you change a `.css` or `.js` file, change that tag in **all four** `.ht
 (any new number works, e.g. today's date). Browsers then fetch the new files straight away
 instead of using an old saved copy, so nobody sees a half-updated page.
 
+**Hero photo:** it comes in two sizes: `asset/hero-chips.webp` (1536 px, laptops and tablets) and
+`asset/hero-chips-900.webp` (900 px, phones). If you change the hero photo, replace both.
+
 ## Before going live
 
 - **Web3Forms key:** replace `YOUR_WEB3FORMS_ACCESS_KEY` in `order.html`.
