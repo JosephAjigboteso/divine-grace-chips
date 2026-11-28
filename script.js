@@ -863,11 +863,11 @@ function setupCollage() {
         const d = map[pos] || { x: 0, y: 0 };
         res[pos] = d;
 
-        // keep every card clear of the title: beside it, or above/below it
-        const clearX = Math.abs(d.x) - iw / 2 >= tw / 2 + gap;
-        const clearY = Math.abs(d.y) - ih / 2 >= th / 2 + gap;
-        if (!clearX && !clearY) ok = false;
-        if (sideY < ih / 2 + gap / 2) ok = false;   // side pair would touch
+        // side cards must sit beside the title (top/bottom are placed separately below)
+        if (pos !== 'top' && pos !== 'bottom') {
+          if (Math.abs(d.x) - iw / 2 < tw / 2 + gap) ok = false;
+          if (sideY < ih / 2 + gap / 2) ok = false;   // side pair would touch
+        }
       });
       return { res, ok };
     };
@@ -880,6 +880,37 @@ function setupCollage() {
       result = place(fit);
     }
     targets = result.res;
+
+    /* Top and bottom cards: each gets the band between the title and the
+       stage edge, measured against where the title text really ends up
+       (its fade-in slide ignored), allowing for the card's tilt. On short
+       screens only these two shrink, so they never touch the title. */
+    const sRect = stage.getBoundingClientRect();
+    let textTop = -th / 2, textBottom = th / 2;
+    if (title && title.offsetParent) {
+      const range = document.createRange(); range.selectNodeContents(title);
+      const r = range.getBoundingClientRect(), tRect = title.getBoundingClientRect();
+      const boxTop = title.offsetParent.getBoundingClientRect().top + title.offsetTop - title.offsetHeight / 2;
+      textTop = boxTop + (r.top - tRect.top) - (sRect.top + h / 2);
+      textBottom = textTop + r.height;
+    }
+    const gapC = isMobile ? 14 : 28;                               // space between these cards and the title
+    const edge = isMobile ? 14 : Math.min(margin, Math.max(18, h * 0.05));
+    const bands = ['top', 'bottom'].map(pos => {
+      const el = items.find(x => x.dataset.pos === pos); if (!el) return null;
+      const a = Math.abs((tilt[pos] || 0) * Math.PI / 180);
+      const tall = el.offsetHeight * Math.cos(a) + el.offsetWidth * Math.sin(a);   // tilted height at full size
+      const from = pos === 'top' ? -h / 2 + edge : textBottom + gapC;
+      const to = pos === 'top' ? textTop - gapC : h / 2 - edge;
+      return { pos, from, to, k: Math.max(0, to - from) / tall };
+    }).filter(Boolean);
+    // all six cards share one size, so the collage stays balanced
+    const before = fit;
+    fit = Math.max(0.45, Math.min(fit, ...bands.map(b => b.k)));
+    if (fit < before) {                                           // re-place the side cards at the smaller size
+      const again = place(fit); Object.assign(targets, again.res);
+    }
+    bands.forEach(b => { targets[b.pos] = { x: 0, y: (b.from + b.to) / 2 }; });
   };
 
   const draw = progress => {
